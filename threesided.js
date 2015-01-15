@@ -16,17 +16,6 @@ Index.prototype.toString = function() {
     return this.x + "," + this.y;
 }
 
-// Index.prototype.toString = function() {
-//     return "( " + this.str() + " )";
-// }
-
-// Object.defineProperty(Index.prototype, "id", {
-//     get: function id() {
-//         return this.x + "," + this.y;
-//     },
-//     configurable: true,
-// });
-
 function Triple(n, p, h) {
     this.n = n;
     this.p = p;
@@ -47,18 +36,7 @@ function Triple(n, p, h) {
     this.toString = function() {
         return this.n + "," + this.p + "," + this.h;
     }
-    
-    // this.toString = function() {
-    //     return "{ n: " + n + ", p: " + p + ", h: " + h + " }";
-    // }
 }
-
-// Object.defineProperty(Triple.prototype, "id", {
-//     get: function id() {
-//         return this.str();
-//     },
-//     configurable: true,
-// });
 
 
 function sorted(a) { 
@@ -93,6 +71,7 @@ for(var i = 0; i < things.length; i++) {
         configurable: true,
     });
 }
+
 function Line(startIndex, endIndex) {
     this.start = startIndex;
     this.end = endIndex;
@@ -119,8 +98,6 @@ function pointAtGridIndex(index) {
 
 
 
-
-console.log("nx = " + nx + ", ny = " + ny);
 
 function drawAllPoints() {
     for(var i = 0; i < nx; i++) {
@@ -361,101 +338,27 @@ function verticesForTriple(triple) {
 
 
 function worldToLocal(point, alt, axis) {
-    // given a point in screen coords, an axis array
-    // and the altitude of the triangles return index
+    // return an index used in tri coordinates
     var d = distanceToLine(point, axis);
     return Math.floor(d/alt);
-    // return getAxes().map(function(axis) {
-    //     console.log("axis = " + axis + "");
-    //     var d = distanceToLine(point, axis);
-        
-    //     return Math.floor(d/alt);
-    // });
 }
 
 function worldToTriple(point, alt) {
-    // given a point in screen coords, an axis array
-    // and the altitude of the triangles return index
+    // given a point in screen coords, 
+    // and the altitude of the triangles
+    // return index Triple
     var axes = getAxes();
     return new Triple(
         worldToLocal(point, alt, axes.n),
         Math.abs(worldToLocal(point, alt, axes.p)),
         Math.abs(worldToLocal(point, alt, axes.h)));
-    // return getAxes().map(function(axis) {
-    //     console.log("axis = " + axis + "");
-    //     var d = distanceToLine(point, axis);
-        
-    //     return Math.floor(d/alt);
-    // });
-}
-
-var cs = [new Path.Circle(new Point(0, 0), 3), 
-new Path.Circle(new Point(0, 0), 3), 
-new Path.Circle(new Point(0, 0), 3)];
-
-function indexPoints(event) {
-    
-    var start = performance.now();
-    var triple = worldToTriple(event.point-os, alt);
-    
-    var verts = verticesForTriple(triple);
-    // for(var i = 0; i < verts.length; i++) {
-    //     var point = pointAtGridIndex(verts[i]);
-    //     cs[i].position = (point+os);
-    //     cs[i].fillColor = "#060";
-    // }
-    // console.log("id = " + verts[0].id);
-    var myPath = new Path({
-    	segments: [
-            pointAtGridIndex(verts[0])+os,
-            pointAtGridIndex(verts[1])+os,
-    	    pointAtGridIndex(verts[2])+os],
-    	fillColor: "#adc",
-    	strokeColor: "#adc",
-    	closed: true,
-	   // selected: true
-    });
-    
-    var end = performance.now();
-    var time = end - start;
-    return time;
-}
-    
-function searchAll(event) {
-
-    var start = performance.now();
-    var mind = 1e9;
-    var p;
-    for(var i = 0; i < points.length; i++) {
-        var d = points[i].getDistance(event.point-os);
-        if(d < mind) {
-            mind = d;
-            p = points[i];
-        }
-    }
-    
-    var end = performance.now();
-    var time = end - start;
-    return time;
-}
-
-var times = [];
-
-var points = [];
-
-for(var j = 0; j < nx-1; j++) {
-for(var i = 1; i < ny-1; i++) {
-    var p = pointAtGridIndex(new Index(j, i));
-    p.x+= alt/3 * (((i + j % 2) % 2) + 1);
-    // var c = new Path.Circle(p+os, 3);
-    // c.fillColor = "#f00";
-    // 
-    // console.log(p.x + ", " + p.y);
-    points.push(p);
-}
 }
 
 
+// a basic Set class
+// usage:
+//   var s = new Set();
+//   s.add(5);
 function Set() {
     this._values = {};
     
@@ -483,8 +386,10 @@ function Set() {
 }
 
 
-
 function triplesForDimension(size) {
+    // calculate and return an array of all the triangles
+    // for a given size (in indices not real world)
+    // the logic is that we move down each column
     var ret = [];
     var n = 0, p = 0, h = 0;
     for (var h = 0; h < size.width - 1; h++) {
@@ -524,18 +429,6 @@ function createDatabase(size) {
     for(var i = 0; i < triples.length; i++) {
         var verts = verticesForTriple(triples[i]);
         db[triples[i].id] = createTriangle(triples[i].id, verts);
-        
-    //     var myPath = new Path({
-    // 	segments: [
-    //         pointAtGridIndex(verts[0])+os,
-    //         pointAtGridIndex(verts[1])+os,
-    // 	    pointAtGridIndex(verts[2])+os],
-    // 	fillColor: "#adc",
-    // 	strokeColor: "#adc",
-    // 	closed: true,
-	   //// selected: true
-    // });
-    // console.log("verts = " + triples[i])
     }
     return db;
 }
@@ -545,9 +438,8 @@ var db = createDatabase();
 var pts = new Set();
 
 function getPerimeterEdges(pntSet) {
-    var localDb = {};
+    var outerEdges = {};
     var vs = pntSet.values();
-    // console.log(vs);
     
     //we want only one occurence of each edge,
     //add things to an object, if the key is there delete...
@@ -556,64 +448,46 @@ function getPerimeterEdges(pntSet) {
         // console.log(vs[i]);
         for (var j = 0; j < 3; j++) {
             
-            var edge;
-            try {
-                edge = db[vs[i]].edges[j];
-            } catch(e) {
-                console.log(e.message);
-                console.log("vssss == " + vs[i]);
-            }
-            if (localDb[edge.id] === undefined) {
-                localDb[edge.id] = edge;
+            var edge = db[vs[i]].edges[j];
+
+            if (outerEdges[edge.id] === undefined) {
+                outerEdges[edge.id] = edge;
             } 
             else {
-                delete localDb[edge.id];
+                delete outerEdges[edge.id];
             }
-            
-            // console.log(db[vs[i]].edges[i]);
         }
     }
-    // console.log(localDb);
-    var perim = pathFromPerimeterEdges(localDb);
+    var perim = pathFromPerimeterEdges(outerEdges);
     makeOutline(perim, outline);
 }
 
+// TODO: return multiple paths for shapes with holes
 function pathFromPerimeterEdges(edges) {
-    //takes the object created by getPerimeterEdges()
+    // takes the object created by getPerimeterEdges(),
+    // namely, an object with edge ids as keys and
+    // edge objects as values
+    // return an the edges in the correct order
+    
     var starts = {}, ends = {}, n = 0;
-    for(var key in edges) {
-        
+    for(var key in edges) {        
         var e = edges[key];
-        // console.log("" + e.start + " -> " + e.end);
-        // console.log(e);
         starts[e.start.id] = e;
         ends[e.end.id] = e;
         n++;
     }
-    
-    // console.log(starts);
-    // console.log(ends);
-    
+        
     var start = sorted(Object.keys(starts))[0];
     
     var perim = [starts[start]];
     for(var i = 1; i < n; i++) {
-        // console.log(nextEdge)
         var prevEdge = perim[i-1];
         var nextEdge = starts[prevEdge.end.id]
-        // nextEdge = ends[nextEdge.end.id];
         perim.push(nextEdge);
     }
-    
-    // console.log(perim[0]);
-    for(var i = 0; i < perim.length; i++) {
-        // console.log("" + perim[i]);
-        // console.log(" -> " + perim[i].end);
-    }
-    
+        
     return perim;
 }
-
 
 
 function makeOutline(perim, outline) {
