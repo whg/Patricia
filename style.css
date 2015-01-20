@@ -1,0 +1,9 @@
+body {
+    background: #ddd;
+}
+
+#canvas {
+    background: white;
+    width: 800px;
+    height: 600px;
+}
