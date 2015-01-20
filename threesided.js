@@ -215,7 +215,7 @@ function drawGrid() {
 
 function _project(point, line) {
     /// use dot product to project a point on to a line
-    console.log(point);
+    
     var toP = point.subtract(pointAtGridIndex(line.start));
     var toEnd = pointAtGridIndex(line.end).subtract(pointAtGridIndex(line.start));
 
@@ -447,7 +447,7 @@ function createDatabase(size) {
 }
 
 var db = createDatabase(); 
-console.log(Object.keys(db));
+// console.log(Object.keys(db));
 var pts = new Set(Object.keys(db));
 
 function getPerimeterEdges(pntSet) {
@@ -458,7 +458,7 @@ function getPerimeterEdges(pntSet) {
     //add things to an object, if the key is there delete...
     //this makes it nicely linear in time
     for (var i = 0; i < vs.length; i++) {
-        // console.log(vs[i]);
+        
         for (var j = 0; j < 3; j++) {
 
             var edge = db[vs[i]].edges[j];
@@ -475,17 +475,16 @@ function getPerimeterEdges(pntSet) {
     makeOutline(perim, outline);
 }
 
-// TODO: return multiple paths for shapes with holes
 function pathFromPerimeterEdges(edges) {
     // takes the object created by getPerimeterEdges(),
     // namely, an object with edge ids as keys and
     // edge objects as values
-    // return an the edges in the correct order
+    // returns a list of edge lists
 
     function IndexHolder(elem) {
         this.elem = elem;
         this.data = {};
-        this.push = function(edge) {
+        this.pushEdge = function(edge) {
             var index = edge[this.elem];
             if (this.data[index.id] !== undefined) {
                 this.data[index.id].push(edge);
@@ -495,19 +494,17 @@ function pathFromPerimeterEdges(edges) {
             }
         };
 
-        this.pop = function(index) {
-            // var index = edge[this.elem];
+        this.popIndex = function(index) {
             var ret = undefined;
+            
             if (this.data[index.id] !== undefined) {
-                // var r = this.data[index.id];
+
                 var r = this.data[index.id].splice(0, 1);
-                console.log(r);
-                console.log("length = " + this.data[index.id].length);
+
                 if (r.length > 0) {
                     ret = r[0];
                 }
                 if (this.data[index.id].length === 0){
-                    console.log("deleted");
                     delete this.data[index.id];
                 }
             }
@@ -515,83 +512,36 @@ function pathFromPerimeterEdges(edges) {
         };
     }
 
-    // var starts = {}, ends = {}, n = 0;
-    // for (var key in edges) {        
-    //     var e = edges[key];
-    //     starts[e.start.id] = e;
-    //     ends[e.end.id] = e;
-    //     n++;
-    // }
-
-    var starts = new IndexHolder("start"), ends = new IndexHolder("end"), n = 0;
+    var starts = new IndexHolder("start");
     for (var key in edges) {
         var e = edges[key];
-        starts.push(e);
-        ends.push(e);
-        n++;
+        starts.pushEdge(e);
     }
 
-    // console.log(starts);
-    // return [];
+
+    var q = 0;
     var perims = [];
     do {
-    var sortedStarts = sorted(Object.keys(starts.data));
-    if (sortedStarts.length === 0) {
-        break;
-        // return [];
-    }
+        var sortedStarts = sorted(Object.keys(starts.data));
+        if (sortedStarts.length === 0) {
+            break;
+        }
 
-    // var start = sortedStarts[0];
+        var firstEdge = starts.data[sortedStarts[0]][0];
+        var perim = [starts.popIndex(firstEdge.start)];
+        var prevEdge, nextEdge;
 
-    // var perim = [starts[start]];
-    // for (var i = 1; i < n; i++) {
-    //     var prevEdge = perim[i-1];
-    //     var nextEdge = starts[prevEdge.end.id]
-    //     perim.push(nextEdge);
-    // }
-
-    var firstEdge = starts.data[sortedStarts[0]][0];
-    var perim = [starts.pop(firstEdge.start)];
-    var prevEdge, nextEdge;
-    var q = 0, t = 0;
-
-    console.log(starts);
-    // debugger;
-
-    
-    do {
-        // do {
+        do {
             prevEdge = perim[perim.length-1];
-            nextEdge = starts.pop(prevEdge.end); //[prevEdge.end.id];
-            console.log("prev = " + prevEdge.id + ", nextEdge = " + nextEdge.id);
-            // if(t++ > 50) break;
-        // } while(perim.indexOf(nextEdge) >= 0);
-        perim.push(nextEdge);
-        if(q++ > 50) break;
-    } while (nextEdge.end.id !== firstEdge.start.id); // {
+            nextEdge = starts.popIndex(prevEdge.end);
+
+            perim.push(nextEdge);
+        } while (nextEdge.end.id !== firstEdge.start.id);
+
         perims.push(perim);
-    } while (true);
+        
+    } while (q++ < 1000);
     
-    // var firstEdgeId = sortedStarts[0];
-    // var perim = [starts[firstEdgeId]];
-    // var prevEdge, nextEdge;
-    // var q = 0, t = 0;
-    // do {
-    //     do {
-    //         prevEdge = perim[perim.length-1];
-    //         nextEdge = starts[prevEdge.end.id];
-    //         if(t++ > 50) break;
-    //     } while(perim.indexOf(nextEdge) >= 0);
-    //     perim.push(nextEdge);
-    //     if(q++ > 50) break;
-    // } while(nextEdge.end.id !== firstEdgeId); // {
-    //     perim.push(nextEdge);
-    // }
-    
-    // debugger;
-    
-    console.log(sorted(Object.keys(starts.data)));
-    console.log(Object.keys(edges).length + " $ " + perim.length);
 
     return perims;
 }
@@ -611,14 +561,6 @@ function makeOutline(perims, outline) {
         }
         outline.addChild(p);
     }
-    // outline.removeSegments();
-    // outline.addSegment(pointAtGridIndex(perim[0].start));
-    // // console.log(perim[0].start);
-    // for (var i = 0; i < perim.length; i++) {
-    //     outline.addSegment(pointAtGridIndex(perim[i].end));
-    //     // console.log(perim[i].end);
-    // }
-    // outline.scale(2);
 }
 
 function Action() {
@@ -634,7 +576,9 @@ function Action() {
     
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        
         pts.add(triple.id);
+        console.log(triple.id);
         getPerimeterEdges(pts);
     }
 
@@ -664,6 +608,7 @@ function Action() {
 
     tool.onMouseDown = function(event) {
         modes[currentMode].mouseDown(event);
+        console.log(outline);
     }
 
     tool.onMouseScroll = function(event) {
@@ -708,12 +653,11 @@ project.activeLayer.transformContent = false;
 drawGrid();
 var outline = new CompoundPath({
     strokeColor: 'black',
-    fillColor: "#adc",
+    fillColor: "#cfe",
     // closed: true,
 });
 
 // debugger;
-
 
 // project.activeLayer.scale(d2);
 
