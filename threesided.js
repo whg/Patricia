@@ -482,178 +482,231 @@ function pathFromPerimeterEdges(edges) {
     // edge objects as values
     // return an the edges in the correct order
 
-    var starts = {}, ends = {}, n = 0;
-    for(var key in edges) {        
+    function IndexHolder(elem) {
+        this.elem = elem;
+        this.data = {};
+        this.push = function(edge) {
+            var index = edge[this.elem];
+            if (this.data[index.id] !== undefined) {
+                this.data[index.id].push(edge);
+            }
+            else {
+                this.data[index.id] = [edge];
+            }
+        };
+
+        this.pop = function(index) {
+            // var index = edge[this.elem];
+            var ret = undefined;
+            if (this.data[index.id] !== undefined) {
+                // var r = this.data[index.id];
+                var r = this.data[index.id].splice(0, 1);
+                console.log(r);
+                console.log("length = " + this.data[index.id].length);
+                if (r.length > 0) {
+                    ret = r[0];
+                }
+                if (this.data[index.id].length === 0){
+                    console.log("deleted");
+                    delete this.data[index.id];
+                }
+            }
+            return ret;
+        };
+    }
+
+    // var starts = {}, ends = {}, n = 0;
+    // for (var key in edges) {        
+    //     var e = edges[key];
+    //     starts[e.start.id] = e;
+    //     ends[e.end.id] = e;
+    //     n++;
+    // }
+
+    var starts = new IndexHolder("start"), ends = new IndexHolder("end"), n = 0;
+    for (var key in edges) {
         var e = edges[key];
-        starts[e.start.id] = e;
-        ends[e.end.id] = e;
+        starts.push(e);
+        ends.push(e);
         n++;
     }
 
-    var sortedStarts = sorted(Object.keys(starts));
+    // console.log(starts);
+    // return [];
+    var perims = [];
+    do {
+    var sortedStarts = sorted(Object.keys(starts.data));
     if (sortedStarts.length === 0) {
-        return [];
+        break;
+        // return [];
     }
 
-    var start = sortedStarts[0];
+    // var start = sortedStarts[0];
 
-    var perim = [starts[start]];
-    for(var i = 1; i < n; i++) {
-        var prevEdge = perim[i-1];
-        var nextEdge = starts[prevEdge.end.id]
+    // var perim = [starts[start]];
+    // for (var i = 1; i < n; i++) {
+    //     var prevEdge = perim[i-1];
+    //     var nextEdge = starts[prevEdge.end.id]
+    //     perim.push(nextEdge);
+    // }
+
+    var firstEdge = starts.data[sortedStarts[0]][0];
+    var perim = [starts.pop(firstEdge.start)];
+    var prevEdge, nextEdge;
+    var q = 0, t = 0;
+
+    console.log(starts);
+    // debugger;
+
+    
+    do {
+        // do {
+            prevEdge = perim[perim.length-1];
+            nextEdge = starts.pop(prevEdge.end); //[prevEdge.end.id];
+            console.log("prev = " + prevEdge.id + ", nextEdge = " + nextEdge.id);
+            // if(t++ > 50) break;
+        // } while(perim.indexOf(nextEdge) >= 0);
         perim.push(nextEdge);
-    }
+        if(q++ > 50) break;
+    } while (nextEdge.end.id !== firstEdge.start.id); // {
+        perims.push(perim);
+    } while (true);
+    
+    // var firstEdgeId = sortedStarts[0];
+    // var perim = [starts[firstEdgeId]];
+    // var prevEdge, nextEdge;
+    // var q = 0, t = 0;
+    // do {
+    //     do {
+    //         prevEdge = perim[perim.length-1];
+    //         nextEdge = starts[prevEdge.end.id];
+    //         if(t++ > 50) break;
+    //     } while(perim.indexOf(nextEdge) >= 0);
+    //     perim.push(nextEdge);
+    //     if(q++ > 50) break;
+    // } while(nextEdge.end.id !== firstEdgeId); // {
+    //     perim.push(nextEdge);
+    // }
+    
+    // debugger;
+    
+    console.log(sorted(Object.keys(starts.data)));
+    console.log(Object.keys(edges).length + " $ " + perim.length);
 
-    return perim;
+    return perims;
 }
 
 
-function makeOutline(perim, outline) {
-    if(perim.length === 0) return;
+function makeOutline(perims, outline) {
+    var perim = perims[0];
+    if (perim.length === 0) return;
 
-    outline.removeSegments();
-    outline.addSegment(pointAtGridIndex(perim[0].start));
-    // console.log(perim[0].start);
-    for(var i = 0; i < perim.length; i++) {
-        outline.addSegment(pointAtGridIndex(perim[i].end));
-        // console.log(perim[i].end);
+    outline.removeChildren();
+    for (var i = 0; i < perims.length; i++) {
+        var p = Path.Line();
+        p.removeSegments();
+        p.addSegment(pointAtGridIndex(perims[i][0].start));
+        for (var j = 0; j < perims[i].length; j++) {
+            p.addSegment(pointAtGridIndex(perims[i][j].end));
+        }
+        outline.addChild(p);
     }
+    // outline.removeSegments();
+    // outline.addSegment(pointAtGridIndex(perim[0].start));
+    // // console.log(perim[0].start);
+    // for (var i = 0; i < perim.length; i++) {
+    //     outline.addSegment(pointAtGridIndex(perim[i].end));
+    //     // console.log(perim[i].end);
+    // }
     // outline.scale(2);
 }
 
-function Transport() {
+function Action() {
 
-    var tool = new Tool();
-    var times = [];
-    tool.onMouseDrag = function(event) {
-        // console.log(keydown);
-        if(keydown) {
-            var t;
-            // t = indexPoints(event);
-            // t = searchAll(event);
-            // console.log("time = " + t);
-            console.log(event.point);
-            console.log(worldToTriple);
-            var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-            // console.log(triple);
-            // pts.add(triple.str());
-            pts.add(triple.id);
-            times.push(t);
-
-            var start = performance.now();
-            getPerimeterEdges(pts);
-            var end = performance.now();
-            var time = end - start;
-            // console.log("perim tixxxzme = " + time);
-
-            // var vs = pts.values();
-            // // console.log(vs);
-            // for(var i = 0; i < vs.length; i++) {
-            //     console.log(db[vs[i]].edges);
-            // }
-        }
-
-        else {
-            if(keydown) {
-                // project.activeLayer.translate()
-                var q = event.point - mouseDownPoint;
-                // console.log(q.x * 1.00001);
-                // // var p = scale;       
-                // var sc = 1 + (q.x*0.1);
-                // tMatrix.set(sc, 0, 0, sc, scalePoint.x, scalePoint.x, scalePoint.y);
-                // project.activeLayer.transform(tMatrix);
-
-                // project.activeLayer.translate(scalePoint.negate());
-                project.activeLayer.scale(1 + (q.x*0.1), scalePoint);
-                // project.activeLayer.translate(scalePoint);
-                mouseDownPoint = new Point(event.point.x, event.point.y);
-                console.log(project.activeLayer.matrix);
-                console.log(project.activeLayer.globalToLocal(event.point));
-            }
-            else {
-                var q = event.delta; //event.point - mouseDownPoint;
-                //if(q === undefined) q = event.point - mouseDownPoint;
-                tMatrix.set(1, 0, 0, 1, q.x, q.y);
-                os = os.add(q);
-                // project.activeLayer.translate(event.point - mouseDownPoint);
-                mouseDownPoint = new Point(event.point.x, event.point.y);
-                // console.log(project.activeLayer.matrix);
-                // debugger;
-                project.activeLayer.transform(tMatrix);
-                console.log(project.activeLayer.matrix);
-                console.log(event.downPoint);
-            }
-        }
+    function pan(event) {
+        project.activeLayer.translate(event.delta);
     }
 
-    var mouseDownPoint, keydown, mouse, scalePoint;
-    var tMatrix = new Matrix();
-    keydown = false;
-    // onMouseDown = onMouseDrag;
-    tool.onMouseDown = function(event) {
-        mouseDownPoint = new Point(event.point.x, event.point.y);
-        scalePoint = new Point(event.point.x, event.point.y);
-        //onMouseDrag(event);
-        // console.log(event.point);
-        console.log(project.activeLayer.globalToLocal(event.point));
+    function zoom(event) {
+        project.activeLayer.scale(1 + (event.delta.y * 0.005), event.point);
+    }
 
+    
+    function addTriangle(event) {
+        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        pts.add(triple.id);
+        getPerimeterEdges(pts);
+    }
+
+    function createMouseMode(init, mouseDown, mouseDrag, mouseScroll) {
+        return {
+            init: init,
+            mouseDown: mouseDown,
+            mouseDrag: mouseDrag,
+            mouseScroll: mouseScroll,
+        };
+    }
+
+    var none = function() {};
+    
+    var modes = {
+        "v": createMouseMode(none, none, pan, zoom),
+        "a": createMouseMode(function() {}, addTriangle, addTriangle, pan),
+         
+    };
+
+    var currentMode = "a";
+
+    var tool = new Tool();
+    tool.onMouseDrag = function(event) {
+        modes[currentMode].mouseDrag(event);
+    }
+
+    tool.onMouseDown = function(event) {
+        modes[currentMode].mouseDown(event);
     }
 
     tool.onMouseScroll = function(event) {
-        // var q = event.point - mouseDownPoint
-        // console.log(event.delta);
-        var r = project.activeLayer.scale(1 + (event.delta), event.point);
+        modes[currentMode].mouseScroll(event);
         paper.view.draw();
-        // console.log(project.activeLayer.matrix);
-        console.log(event.point);
-        console.log(project.activeLayer.localToGlobal(event.point));
-        // mouseDownPoint = new Point(event.point.x, event.point.y);
     }
 
     tool.onKeyDown = function onKeyDown(event) {
-        keydown = true;
-        // console.log(project.activeLayer.globalToLocal(mouse));
-
-        // if(event.key == 'i') console.log("III");
-        // for (let item of pts.values()) console.log(item);
-        // console.log(pts);
-        // var vs = pts.values();
-        // console.log(vs);
-        // for(var i = 0; i < vs.length; i++) {
-        //     console.log(db[vs[i]].edges);
-        // }
+        if (modes[event.key] !== undefined) {
+            currentMode = event.key;
+        }
+        else if (event.key === "c") {
+            outline.removeChildren();
+            pts._values = {};
+        }
     }
 
     tool.onKeyUp = function onKeyUp(event) {
-        keydown = false;
+
     }
 
     tool.scrollEvent = new ToolEvent(tool, "mousescroll", new MouseEvent());
     tool.scrollEvent.point = new Point();
-    console.log(tool.scrollEvent);
+    tool.scrollEvent.delta = new Point();
+
     $("#canvas").bind('mousewheel DOMMouseScroll', function(event){
 
-        tool.scrollEvent.point.set(event.offsetX, event.offsetY);
-        tool.scrollEvent.delta = event.originalEvent.wheelDelta / 1900.0;
+        // console.log(event.originalEvent.deltaX + ", " + event.originalEvent.deltaY + ", " +event.originalEvent.wheelDelta);
+        // tool.scrollEvent.point.set(event.offsetX, event.offsetY);
+        // tool.scrollEvent.delta = event.originalEvent.wheelDelta / 1900.0;
+        tool.scrollEvent.delta.x = -event.originalEvent.deltaX * 0.5;
+        tool.scrollEvent.delta.y = -event.originalEvent.deltaY * 0.5;
         tool.onMouseScroll(tool.scrollEvent);
-        // console.log(event.originalEvent.wheelDelta + ", " + event.originalEvent.detail);
-        // console.log(event);
         event.preventDefault();
-        if (event.originalEvent.wheelDelta > 0 || event.originalEvent.detail < 0) {
-
-        }
-        else {
-            // scroll down
-        }
     });
 
 }
-var transport = new Transport();
+var action = new Action();
 
 project.activeLayer.transformContent = false;
 
 drawGrid();
-var outline = new Path({
+var outline = new CompoundPath({
     strokeColor: 'black',
     fillColor: "#adc",
     // closed: true,
