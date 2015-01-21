@@ -750,8 +750,7 @@ function Action() {
             outline.removeChildren();
             pts._values = {};
         }
-        console.log(event);
-        
+        return false;
     }
 
     tool.onKeyUp = function onKeyUp(event) {
@@ -759,6 +758,7 @@ function Action() {
             currentKey = pushedMode;
             console.log("current key = " + currentKey);
         }
+        return false;
     }
 
     tool.scrollEvent = new ToolEvent(tool, "mousescroll", new MouseEvent());
