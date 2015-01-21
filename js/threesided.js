@@ -785,9 +785,7 @@ function Action() {
         return this;
     }
 
-
     tool.onKeyDown = function onKeyDown(event) {
-
         
         
         if (modes[event.key] !== undefined) {
