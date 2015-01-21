@@ -8,8 +8,8 @@ var side = 50;
 var alt = sqrt3 * side * 0.5;
 
 
-var nx = 13;
-var ny = 18;
+var nx = 29;
+var ny = 48;
 
 var boundsSize = new Size(nx*alt, ny*side);
 
@@ -47,6 +47,17 @@ function sorted(a) {
     var b = a.slice(0); 
     b.sort(); 
     return b; 
+}
+
+function mergeObjects() {
+    var r = {};
+    for (var ak in arguments) {
+        var obj = arguments[ak];
+        for (var key in obj) {
+            r[key] = obj[key];
+        }
+    }
+    return r;
 }
 
 function Edge(start, end) {
@@ -200,7 +211,8 @@ function drawGridLines(type, size) {
         var p = new Path.Line({
             from: pointAtGridIndex(line.start).add(os),
             to: pointAtGridIndex(line.end).add(os),
-            strokeColor: '#aaa'
+            strokeColor: '#aaa',
+            strokeScaling: false,
         });
         line = nextLine(line, type, size);
     }
@@ -353,7 +365,7 @@ function worldToTriple(point, alt) {
     return new Triple(
         worldToLocal(point, alt, axes.n),
         Math.abs(worldToLocal(point, alt, axes.p)),
-        Math.abs(worldToLocal(point, alt, axes.h)));
+        Math.floor(point.x / alt));
 }
 
 
@@ -361,11 +373,13 @@ function worldToTriple(point, alt) {
 // usage:
 //   var s = new Set();
 //   s.add(5);
-function Set(universe) {
+function Set() {
     this._values = {};
     this._universe = {};
-    for (var i = 0; i < universe.length; i++) {
-        this._universe[universe[i]] = true;
+
+    var uv = Object.keys(createDatabase());
+    for (var i = 0; i < uv.length; i++) {
+        this._universe[uv[i]] = true;
     }
 
     this.has = function(e) {
@@ -386,12 +400,16 @@ function Set(universe) {
         return false;
     };
 
+    this.remove = function(e) {
+        delete this._values[e];
+    }
+
     this.values = function() {
         return Object.keys(this._values);
     };
 
     this.toString = function() {
-        console.log("Set( " + this.values().join(', ') + " )");
+        return "Set( " + this.values().join(', ') + " )";
     };
 
     return this;
@@ -448,7 +466,7 @@ function createDatabase(size) {
 
 var db = createDatabase(); 
 // console.log(Object.keys(db));
-var pts = new Set(Object.keys(db));
+var pts = {}; //= new Set(Object.keys(db));
 
 function getPerimeterEdges(pntSet) {
     var outerEdges = {};
@@ -471,8 +489,7 @@ function getPerimeterEdges(pntSet) {
             }
         }
     }
-    var perim = pathFromPerimeterEdges(outerEdges);
-    makeOutline(perim, outline);
+    return outerEdges;
 }
 
 function pathFromPerimeterEdges(edges) {
@@ -563,6 +580,42 @@ function makeOutline(perims, outline) {
     }
 }
 
+
+function UIDCenter() {
+    this._v = 0;
+    this.next = function() {
+        this.current = this._v++;
+        return this.current;
+    };
+    this.current = 0;
+}
+var uidc = new UIDCenter();
+var invertedIndex = {};
+
+function TShape(id) {
+    this.pts = new Set();
+    this.id = id;
+    this.outline = new CompoundPath({
+        strokeColor: 'black',
+        fillColor: new Color(220, id/10.0, 230), //"#cfe",
+        // closed: true,
+    });
+    this.q = id/10.0;
+    // this.outline.fillColor = new Color(0.8*this.q, this.q, 0.93*this.q);
+    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random());
+
+    this.draw = function() {
+        var outerEdges = getPerimeterEdges(this.pts);
+        var perim = pathFromPerimeterEdges(outerEdges);
+        makeOutline(perim, this.outline);  
+    };
+    
+    return this;
+}
+
+var shapes = {};
+var currentTriangeId = null;
+
 function Action() {
 
     function pan(event) {
@@ -573,13 +626,72 @@ function Action() {
         project.activeLayer.scale(1 + (event.delta.y * 0.005), event.point);
     }
 
+
     
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        
-        pts.add(triple.id);
+      
+        if (shapes[uidc.current].pts.add(triple.id)) {
+            //it's new so update the inverted index
+            invertedIndex[triple.id] = uidc.current;
+        }
+        // else if (triple.id !== currentTriangeId) {
+        //     if (shapes[uidc.current].pts.has(currentTriangeId)) {
+        //         console.log("HAS ID!11");
+        //         shapes[uidc.current].pts.remove(currentTriangeId);
+        //         delete invertedIndex[currentTriangeId];
+        //         // shapes[uidc.current].draw();
+        //     }
+        //     // currentTriangeId = triple.id;
+        // }
+
+        currentTriangeId = triple.id;
+        // console.log(pts._values);
+        for (var key in shapes) {
+            var shape = shapes[key].draw();
+            // var outerEdges = getPerimeterEdges(shape.pts);
+            // var perim = pathFromPerimeterEdges(outerEdges);
+            // makeOutline(perim, shape.outline);
+        }
+        // shapes[uidc.current].draw();
+    }
+
+    function findShape(event) {
+        // console.log(invertedIndex);
+        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        var currentUID = invertedIndex[triple.id];
+        console.log(invertedIndex);
         console.log(triple.id);
-        getPerimeterEdges(pts);
+        if (currentUID === undefined) {
+            currentUID = uidc.next();
+            shapes[currentUID] = new TShape(currentUID);
+            invertedIndex[triple.id] = currentUID;
+
+        }
+        uidc.current = currentUID;
+        console.log("current id = " + currentUID);
+        currentTriangeId = triple.id;
+    }
+
+    function removeTriangle(event) {
+        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        if (triple.id !== currentTriangeId) {
+            if (shapes[uidc.current].pts.has(currentTriangeId)) {
+                console.log("HAS ID!11");
+                shapes[uidc.current].pts.remove(currentTriangeId);
+                delete invertedIndex[currentTriangeId];
+                shapes[uidc.current].draw();
+            }
+            currentTriangeId = triple.id;
+        }
+    }
+
+    function selectShape(event) {
+        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        var sid = invertedIndex[triple.id];
+        if (sid !== undefined) {
+            shapes[sid].outline.selected = true;
+        }
     }
 
     function createMouseMode(init, mouseDown, mouseDrag, mouseScroll) {
@@ -591,43 +703,62 @@ function Action() {
         };
     }
 
+
+
     var none = function() {};
     
     var modes = {
         "v": createMouseMode(none, none, pan, zoom),
-        "a": createMouseMode(function() {}, addTriangle, addTriangle, pan),
-         
+        "a": createMouseMode(function() {}, findShape, addTriangle, pan),
+        "s": createMouseMode(none, selectShape, none, none),
     };
 
-    var currentMode = "a";
+    var modifiers = {
+        "option": modes["v"], //createMouseMode(none, none, none, zoom),
+        "d": createMouseMode(none, findShape, removeTriangle, pan),
+    };
+
+    var keys = mergeObjects(modes, modifiers);
+
+    var currentKey = "a";
+    var pushedMode = null;
 
     var tool = new Tool();
     tool.onMouseDrag = function(event) {
-        modes[currentMode].mouseDrag(event);
+        keys[currentKey].mouseDrag(event);
     }
 
     tool.onMouseDown = function(event) {
-        modes[currentMode].mouseDown(event);
-        console.log(outline);
+        keys[currentKey].mouseDown(event);
+        // console.log(outline);
     }
 
     tool.onMouseScroll = function(event) {
-        modes[currentMode].mouseScroll(event);
+        keys[currentKey].mouseScroll(event);
         paper.view.draw();
     }
 
     tool.onKeyDown = function onKeyDown(event) {
         if (modes[event.key] !== undefined) {
-            currentMode = event.key;
+            currentKey = event.key;
+        }
+        else if (modifiers[event.key] !== undefined && currentKey !== event.key) {
+            pushedMode = currentKey;
+            currentKey = event.key;
         }
         else if (event.key === "c") {
             outline.removeChildren();
             pts._values = {};
         }
+        console.log(event);
+        
     }
 
     tool.onKeyUp = function onKeyUp(event) {
-
+        if (currentKey in modifiers) {
+            currentKey = pushedMode;
+            console.log("current key = " + currentKey);
+        }
     }
 
     tool.scrollEvent = new ToolEvent(tool, "mousescroll", new MouseEvent());
@@ -637,7 +768,7 @@ function Action() {
     $("#canvas").bind('mousewheel DOMMouseScroll', function(event){
 
         // console.log(event.originalEvent.deltaX + ", " + event.originalEvent.deltaY + ", " +event.originalEvent.wheelDelta);
-        // tool.scrollEvent.point.set(event.offsetX, event.offsetY);
+        tool.scrollEvent.point.set(event.offsetX, event.offsetY);
         // tool.scrollEvent.delta = event.originalEvent.wheelDelta / 1900.0;
         tool.scrollEvent.delta.x = -event.originalEvent.deltaX * 0.5;
         tool.scrollEvent.delta.y = -event.originalEvent.deltaY * 0.5;
@@ -679,4 +810,27 @@ view.draw();
 
 
 
+/*
 
+TODO:
+
+remove parts of shape
+choose order of shapes
+choose colour of shapes
+don't zoom in the lines (we don't want thick lines)
+undo!!!
+
+
+COMMANDS - for undo
+- add triangle
+- remove triangle
+- 
+
+notes
+
+
+so many amazing things about paper.js
+strokescaling = false, was a life saver!
+.transformContent = false took me ages to figure out!
+
+*/
