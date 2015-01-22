@@ -93,6 +93,52 @@ function ILine(startIndex, endIndex) {
     return this;
 }
 
+function RingBuffer(size, banConsecutive) {
+
+    this.size = size;
+    this.values = new Array(size);
+    this.pos = 0;
+
+
+    this.pushBasic = function(v) {
+        this.values[this.pos] = v;
+        this.pos++;
+        this.pos%= this.size;
+        return true;
+    }
+    
+    this.pushNoConsecutive = function(v) {
+        if (v == this.peek()) {
+            return false;
+        }
+        return this.pushBasic(v);
+    }
+    
+    if (banConsecutive) {
+        this.push = this.pushNoConsecutive;
+    }
+    else {
+        this.push = this.pushBasic;
+    }
+
+    this.peek = function() {
+        var i = (this.pos - 1 + this.size) % this.size;
+        return this.values[i];
+    }
+    
+    this.pop = function() {   
+        if (this.pos == 0) {
+            this.pos+= this.size;
+        }
+        this.pos--;
+        var ret = this.values[this.pos];
+        this.values[this.pos] = undefined;
+        return ret;
+    }
+    return this;
+}
+
+
 function indexToGrid(index) {
     var y = index.y * 2 + (index.x+1) % 2
     return new Index(index.x, y);
@@ -714,104 +760,121 @@ function Action() {
     // };
 
     // var modifiers = {
-        "option": modes["v"], //createMouseMode(none, none, none, zoom),
+        "option": createMouseMode(none, none, pan, zoom),
         "d": createMouseMode(none, findShape, removeTriangle, pan),
     };
 
-    ["command", "control", "option", "shift"];
-
-    var keys = mergeObjects(modes, modifiers);
+    var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
+    var modifiers = Object.keys(modifierStates);
+    
+    function atLeastOneModifier() {
+        for (var key in modifierStates) {
+            if (modifierStates[key]) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     var currentKey = "a";
-    var pushedMode = null;
+    var lastKey = null;
+    var pushedMode = false;
 
     var tool = new Tool();
     tool.onMouseDrag = function(event) {
-        keys[currentKey].mouseDrag(event);
+        if (modes[currentKey] !== undefined) {
+            modes[currentKey].mouseDrag(event);
+        }
     }
 
     tool.onMouseDown = function(event) {
-        keys[currentKey].mouseDown(event);
-        // console.log(outline);
+        if (modes[currentKey] !== undefined) {
+            modes[currentKey].mouseDown(event);
+        }
+        // console.log(modifierStates);
     }
 
     tool.onMouseScroll = function(event) {
-        keys[currentKey].mouseScroll(event);
+        if (modes[currentKey] !== undefined) {
+            modes[currentKey].mouseScroll(event);
+        }
         paper.view.draw();
     }
 
-    function RingBuffer(size, allowConsecutive) {
+    function undo() {}
+    var combos = {
+      "command+z": undo(),  
+    };
 
-        this.size = size;
-        this.values = new Array(size);
-        this.pos = 0;
+    
 
-
-        this.pushBasic = function(v) {
-            this.values[this.pos] = v;
-            this.pos++;
-            this.pos%= this.size;
-            return true;
-        }
-        
-        this.pushNoConsecutive = function(v) {
-            if (v == this.peek()) {
-                return false;
+    function processCombo(event) {
+        var mods = [];
+        for (var mod in modifierStates) {
+            if (event.modifiers[mod]) {
+                mods.push(mod);
             }
-            return this.pushBasic(v);
         }
-        
-        if (allowConsecutive) {
-            this.push = this.pushBasic;
-        }
-        else {
-            this.push = this.pushNoConsecutive;
-        }
-
-        this.peek = function() {
-            var i = (this.pos - 1 + this.size) % this.size;
-            return this.values[i];
-        }
-        
-        this.pop = function() {   
-            if (this.pos == 0) {
-                this.pos+= this.size;
-            }
-            this.pos--;
-            var ret = this.values[this.pos];
-            this.values[this.pos] = undefined;
-            return ret;
-        }
-        return this;
+        var modsstr = mods.join("+");
+        console.log(modsstr + "+" +  event.key);
+        // console.log(key);
     }
 
     tool.onKeyDown = function onKeyDown(event) {
-        
-        
-        if (modes[event.key] !== undefined) {
-            currentKey = event.key;
-        }
-        else if (modifiers[event.key] !== undefined && currentKey !== event.key) {
+
+        var ret = true;
+        // console.log(event);
+        // modifiers are treated seperately because they
+        // don't repeat the call to onKeyDown
+        if (event.key in modifierStates) {
             pushedMode = currentKey;
-            currentKey = event.key;
+            modifierStates[event.key] = true;
+            // console.log("ONE");
         }
-        else if (event.key === "c") {
-            outline.removeChildren();
-            pts._values = {};
+        else if (!pushedMode && currentKey === event.key) {
+            // we have repeated
+            pushedMode = lastKey;
+            // console.log("pushed " + lastKey + "(" + currentKey + ")");
+        }
+        else {
+            // console.log("TWO");
+            //this means it's just a single press of a non modifier
+            if (atLeastOneModifier()) {
+                // event.mods = {};
+                for (var key in modifierStates) {
+                    event.modifiers[key] = modifierStates[key];
+                }
+                // var a = delete event.modifiers;
+                // console.log("command = " + );
+                // event.modifiers["shift"] = true;
+                // debugger;
+                // event.modifiers.shift = "asdf"; //(true);
+                // event.setModifiers("asf");
+                // for event.modifierss = modifiers;
+                // console.log(modifiers);
+                processCombo(event);
+            }
         }
         
-        // event.preventDefault();
-        else if(event.key == "backspace") {
+        lastKey = currentKey;
+        currentKey = event.key;
+        // console.log(lastKey + " -> " +currentKey + " " + event);
+
+
+        
+        if(event.key == "backspace") {
             return false;
         }
-
-        console.log(event);
     }
 
     tool.onKeyUp = function onKeyUp(event) {
-        if (currentKey in modifiers) {
+        if (pushedMode) {
             currentKey = pushedMode;
-            console.log("current key = " + currentKey);
+            // console.log("poped, current key = " + currentKey);
+            pushedMode = false;
+        }
+        if (modifierStates[event.key] !== undefined) {
+            modifierStates[event.key] = false;
         }
         // event.preventDefault();
     }
