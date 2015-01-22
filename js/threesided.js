@@ -693,13 +693,13 @@ function Action() {
 
         currentTriangeId = triple.id;
         // console.log(pts._values);
-        for (var key in shapes) {
-            var shape = shapes[key].draw();
+        // for (var key in shapes) {
+            // var shape = shapes[key].draw();
             // var outerEdges = getPerimeterEdges(shape.pts);
             // var perim = pathFromPerimeterEdges(outerEdges);
             // makeOutline(perim, shape.outline);
-        }
-        // shapes[uidc.current].draw();
+        // }
+        shapes[uidc.current].draw();
     }
 
     function findShape(event) {
@@ -855,9 +855,11 @@ function Action() {
                 processCombo(event);
             }
         }
-        
-        lastKey = currentKey;
-        currentKey = event.key;
+
+        if (modes[event.key] !== undefined) {
+            lastKey = currentKey;
+            currentKey = event.key;
+        }
         // console.log(lastKey + " -> " +currentKey + " " + event);
 
 
