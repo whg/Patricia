@@ -447,6 +447,7 @@ function Set() {
     };
 
     this.remove = function(e) {
+        console.log('removing ' + e);
         delete this._values[e];
     }
 
@@ -662,6 +663,64 @@ function TShape(id) {
 var shapes = {};
 var currentTriangeId = null;
 
+function Command(action, direction, args) {
+    this.action = action;
+    this.direction = direction;
+    this.args = new Array(args.length);
+    for (var i = 0; i < args.length; i++) {
+        this.args[i] = args[i];
+    }
+
+    function reverse(dir) {
+        if (dir === "forward") return "backward";
+        return "forward";
+    }
+
+    this.execute = function(reversed) {
+        console.log("executing " + this.action + " (" + this.direction +") with " + this.args);
+        var dir = this.direction;
+        if (reversed) {
+            dir = reverse(dir);
+        }
+        this.action[dir].apply(undefined, this.args);
+    };
+
+    return this;
+}
+
+function Invoker() {
+    var commands = [];
+    var pos = 0;
+
+    this.push = function(action, direction, args) {
+
+        var comm = new Command(action, direction, args);
+
+        if (pos !== commands.length) {
+            commands = commands.splice(0, pos);
+        }
+
+        commands.push(comm);
+        comm.execute();
+        pos++;
+    };
+
+    this.undo = function() {
+        if (pos < 1) wm("nothing to undo");
+        else {
+            commands[--pos].execute(true);
+        }
+    };
+
+    this.redo = function() {
+        if (pos === commands.length) wm("can't redo");
+        else {
+            commands[pos++].execute();
+        }
+    };
+}
+
+
 function Action() {
 
     function pan(event) {
@@ -672,64 +731,103 @@ function Action() {
         project.activeLayer.scale(1 + (event.delta.y * 0.005), event.point);
     }
 
+    // function ExtendTriangleAction(direction) {
+        
+    // }
 
+    var CreateTriangleAction = {
+        "forward": function(tripleId, shapeId){
+
+            shapes[shapeId] = new TShape(shapeId);
+            invertedIndex[tripleId] = shapeId;
+            // addTriangle(event);
+            ExtendTriangleAction.forward(tripleId, shapeId);
+        },
+        "backward": function(tripleId, shapeId){
+            // shapes[shapeId].pts.remove(tripleId);
+            // delete invertedIndex[tripleId];
+            // ExtendTriangleAction.backward(tripleId, shapeId);
+                // debugger;
+            shapes[shapeId].outline.remove();
+            delete shapes[shapeId];
+            
+        },
+    };
+
+    var ExtendTriangleAction = {
+        "forward": function(tripleId, shapeId) {
+
+            //it's new so update the inverted index
+            shapes[shapeId].pts.add(tripleId);
+            invertedIndex[tripleId] = shapeId;
+            wm("new shape at " + tripleId);
+
+            currentTriangeId = tripleId;
+            shapes[shapeId].draw();
+
+        },
+        
+        "backward": function(tripleId, shapeId) {
+
+            shapes[shapeId].pts.remove(tripleId);
+            delete invertedIndex[tripleId];
+            // if (shapes[shapeId].pts.values().length === 0) {
+            //     // debugger;
+            //     shapes[shapeId].outline.remove();
+            //     delete shapes[shapeId];
+
+            // }
+            // else {
+                shapes[shapeId].draw();
+            // }
+
+        },
+        
+    };
+
+
+    var invoker = new Invoker();
     
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-      
-        if (shapes[uidc.current].pts.add(triple.id)) {
-            //it's new so update the inverted index
-            invertedIndex[triple.id] = uidc.current;
+        // if (shapes[uidc.current].pts.add(triple.id)) {
+        if (!shapes[uidc.current].pts.has(triple.id)) {
+            invoker.push(ExtendTriangleAction, "forward", [triple.id, uidc.current]);
         }
-        // else if (triple.id !== currentTriangeId) {
-        //     if (shapes[uidc.current].pts.has(currentTriangeId)) {
-        //         console.log("HAS ID!11");
-        //         shapes[uidc.current].pts.remove(currentTriangeId);
-        //         delete invertedIndex[currentTriangeId];
-        //         // shapes[uidc.current].draw();
-        //     }
-        //     // currentTriangeId = triple.id;
-        // }
-
-        currentTriangeId = triple.id;
-        // console.log(pts._values);
-        // for (var key in shapes) {
-            // var shape = shapes[key].draw();
-            // var outerEdges = getPerimeterEdges(shape.pts);
-            // var perim = pathFromPerimeterEdges(outerEdges);
-            // makeOutline(perim, shape.outline);
-        // }
-        shapes[uidc.current].draw();
+        // ExtendTriangleAction.forward(triple);        
     }
 
     function findShape(event) {
         // console.log(invertedIndex);
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        var currentUID = invertedIndex[triple.id];
-        console.log(invertedIndex);
-        console.log(triple.id);
-        if (currentUID === undefined) {
-            currentUID = uidc.next();
-            shapes[currentUID] = new TShape(currentUID);
-            invertedIndex[triple.id] = currentUID;
-
+        var shapeId = invertedIndex[triple.id];
+        // console.log(invertedIndex);
+        // console.log(triple.id);
+        if (shapeId === undefined) {
+            shapeId = uidc.next();
+            // ASDFASD
+            invoker.push(CreateTriangleAction, "forward", [triple.id, shapeId]);
         }
-        uidc.current = currentUID;
-        console.log("current id = " + currentUID);
+        uidc.current = shapeId;
+        // console.log("current id = " + currentUID);
         currentTriangeId = triple.id;
     }
 
     function removeTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        if (triple.id !== currentTriangeId) {
+        if (invertedIndex[currentTriangeId] !== undefined && triple.id !== currentTriangeId) {
+                // wm("removing at" + triple.id);
             if (shapes[uidc.current].pts.has(currentTriangeId)) {
-                console.log("HAS ID!11");
-                shapes[uidc.current].pts.remove(currentTriangeId);
-                delete invertedIndex[currentTriangeId];
-                shapes[uidc.current].draw();
+                    // wm("deleted at " + triple.id);
+                var action = ExtendTriangleAction;
+                if (shapes[shapeId].pts.values().length === 0) {
+                    action = CreateTriangleAction;
+                }
+                invoker.push(action, "backward", [currentTriangeId, uidc.current]);
             }
             currentTriangeId = triple.id;
-        }
+        }   
+        
     }
 
     function selectShape(event) {
@@ -757,9 +855,6 @@ function Action() {
         "v": createMouseMode(none, none, pan, zoom),
         "a": createMouseMode(function() {}, findShape, addTriangle, pan),
         "s": createMouseMode(none, selectShape, none, none),
-    // };
-
-    // var modifiers = {
         "option": createMouseMode(none, none, pan, zoom),
         "d": createMouseMode(none, findShape, removeTriangle, pan),
     };
@@ -781,44 +876,61 @@ function Action() {
     var pushedMode = false;
 
     var tool = new Tool();
+    
     tool.onMouseDrag = function(event) {
-        if (modes[currentKey] !== undefined) {
-            modes[currentKey].mouseDrag(event);
-        }
+        modes[currentKey].mouseDrag(event);
     }
 
     tool.onMouseDown = function(event) {
-        if (modes[currentKey] !== undefined) {
-            modes[currentKey].mouseDown(event);
-        }
-        // console.log(modifierStates);
+        modes[currentKey].mouseDown(event);
     }
 
     tool.onMouseScroll = function(event) {
-        if (modes[currentKey] !== undefined) {
-            modes[currentKey].mouseScroll(event);
-        }
+        modes[currentKey].mouseScroll(event);
+
         paper.view.draw();
     }
 
-    function undo() {}
-    var combos = {
-      "command+z": undo(),  
-    };
+    function KeyComboHandler() {
+        this.combos = {};
 
-    
+        function keysFromEvent(event) {
+            var keys = [];
+            for (var mod in event.modifiers) {
+                if (event.modifiers[mod]) {
+                    keys.push(mod);
+                }
+            }
+            keys.push(event.key);
+            return keys;
+        }
 
-    function processCombo(event) {
-        var mods = [];
-        for (var mod in modifierStates) {
-            if (event.modifiers[mod]) {
-                mods.push(mod);
+        
+        function makeKeyComboId(keys) {
+            return sorted(keys).join("+");
+        }
+
+        this.add = function(keys, func) {
+            this.combos[makeKeyComboId(keys)] = func;
+        }
+
+        this.call = function(event) {
+            var keys = keysFromEvent(event);
+            var id = makeKeyComboId(keys);
+            if (this.combos[id] !== undefined) {
+                this.combos[id]();
+                // this.combos[id].apply(this)
+                event.preventDefault();
+                return false;
             }
         }
-        var modsstr = mods.join("+");
-        console.log(modsstr + "+" +  event.key);
-        // console.log(key);
     }
+
+    var keyHandler = new KeyComboHandler();
+    keyHandler.add(["command", "shift", "z"], function() { invoker.redo(); });
+    // keyHandler.add(["q", "shift"], function() { console.log("BIG QQQ!")});
+    keyHandler.add(["command", "z"], function() { invoker.undo(); });
+    
 
     tool.onKeyDown = function onKeyDown(event) {
 
@@ -837,22 +949,15 @@ function Action() {
             // console.log("pushed " + lastKey + "(" + currentKey + ")");
         }
         else {
-            // console.log("TWO");
+
             //this means it's just a single press of a non modifier
             if (atLeastOneModifier()) {
-                // event.mods = {};
                 for (var key in modifierStates) {
                     event.modifiers[key] = modifierStates[key];
                 }
-                // var a = delete event.modifiers;
-                // console.log("command = " + );
-                // event.modifiers["shift"] = true;
-                // debugger;
-                // event.modifiers.shift = "asdf"; //(true);
-                // event.setModifiers("asf");
-                // for event.modifierss = modifiers;
-                // console.log(modifiers);
-                processCombo(event);
+                
+                ret = keyHandler.call(event);
+
             }
         }
 
@@ -867,6 +972,8 @@ function Action() {
         if(event.key == "backspace") {
             return false;
         }
+
+        return ret; // might be false in which caaase don't do what you normally do
     }
 
     tool.onKeyUp = function onKeyUp(event) {
@@ -952,5 +1059,13 @@ notes
 so many amazing things about paper.js
 strokescaling = false, was a life saver!
 .transformContent = false took me ages to figure out!
-
+compoundPath is a joy to work with
 */
+
+function wm(m) {
+    $("#messages").append("<p>"+m+"</p>");
+    if ($("#messages p").length > 10) {
+        $('#messages p:lt(2)').remove();
+    }
+}
+

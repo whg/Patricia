@@ -1,11 +1,22 @@
 body {
     background: #ddd;
+    font-family: Menlo;
 }
 
 #canvas {
     background: white;
     width: 800px;
     height: 600px;
+    float: left;
+}
+
+#messages {
+    float: left;
+    margin-left: 10px;
+}
+
+#messages p {
+    margin: 2px;
 }
 
 .grabbable {
