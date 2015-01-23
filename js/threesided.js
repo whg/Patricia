@@ -13,8 +13,6 @@ var ny = 48;
 
 var boundsSize = new Size(nx*alt, ny*side);
 
-var os = new Point(0, 0);
-
 var Index = Point;
 Index.prototype.toString = function() {
     return this.x + "," + this.y;
@@ -255,8 +253,8 @@ function drawGridLines(type, size) {
 
     for (var i = 0; i < n; i++) {
         var p = new Path.Line({
-            from: pointAtGridIndex(line.start).add(os),
-            to: pointAtGridIndex(line.end).add(os),
+            from: pointAtGridIndex(line.start),
+            to: pointAtGridIndex(line.end),
             strokeColor: '#aaa',
             strokeScaling: false,
         });
@@ -329,8 +327,8 @@ function drawAxes() {
     var axes = getAxesArray();
     for (var i = 0; i < axes.length; i++) {
         new Path.Line({
-            from: pointAtGridIndex(axes[i].start).add(os),
-            to: pointAtGridIndex(axes[i].end).add(os),
+            from: pointAtGridIndex(axes[i].start),
+            to: pointAtGridIndex(axes[i].end),
             strokeColor: '#00f'
         });
     }
