@@ -622,8 +622,10 @@ function makeOutline(perims, outline) {
         p.addSegment(pointAtGridIndex(perims[i][0].start));
         for (var j = 0; j < perims[i].length; j++) {
             p.addSegment(pointAtGridIndex(perims[i][j].end));
+            
         }
         outline.addChild(p);
+
     }
 }
 
@@ -644,12 +646,12 @@ function TShape(id) {
     this.id = id;
     this.outline = new CompoundPath({
         strokeColor: 'black',
-        fillColor: new Color(220, id/10.0, 230), //"#cfe",
+        fillColor: new Color(1.0, id/2.0, 1.0), //"#cfe",
         // closed: true,
     });
     this.q = id/10.0;
     // this.outline.fillColor = new Color(0.8*this.q, this.q, 0.93*this.q);
-    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random());
+    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random(), 0.4);
 
     this.draw = function() {
         var outerEdges = getPerimeterEdges(this.pts);
@@ -677,12 +679,14 @@ function Command(action, direction, args) {
     }
 
     this.execute = function(reversed) {
-        console.log("executing " + this.action + " (" + this.direction +") with " + this.args);
+
         var dir = this.direction;
         if (reversed) {
             dir = reverse(dir);
         }
-        this.action[dir].apply(undefined, this.args);
+
+        var name = this.action[dir].apply(undefined, this.args);
+        console.log("executed " + name + " with " + this.args);
     };
 
     return this;
@@ -736,25 +740,26 @@ function Action() {
     // }
 
     var CreateTriangleAction = {
+        "name": "CreateTriangle",
         "forward": function(tripleId, shapeId){
 
             shapes[shapeId] = new TShape(shapeId);
             invertedIndex[tripleId] = shapeId;
             // addTriangle(event);
             ExtendTriangleAction.forward(tripleId, shapeId);
+
+            return "Create";
         },
         "backward": function(tripleId, shapeId){
-            // shapes[shapeId].pts.remove(tripleId);
-            // delete invertedIndex[tripleId];
-            // ExtendTriangleAction.backward(tripleId, shapeId);
-                // debugger;
             shapes[shapeId].outline.remove();
             delete shapes[shapeId];
-            
+
+            return "Delete";
         },
     };
 
     var ExtendTriangleAction = {
+        "name": "ExtendTriangle",
         "forward": function(tripleId, shapeId) {
 
             //it's new so update the inverted index
@@ -765,22 +770,17 @@ function Action() {
             currentTriangeId = tripleId;
             shapes[shapeId].draw();
 
+            return "Extend";
+
         },
         
         "backward": function(tripleId, shapeId) {
 
             shapes[shapeId].pts.remove(tripleId);
             delete invertedIndex[tripleId];
-            // if (shapes[shapeId].pts.values().length === 0) {
-            //     // debugger;
-            //     shapes[shapeId].outline.remove();
-            //     delete shapes[shapeId];
-
-            // }
-            // else {
-                shapes[shapeId].draw();
-            // }
-
+            shapes[shapeId].draw();
+            
+            return "Shrink";
         },
         
     };
@@ -820,7 +820,7 @@ function Action() {
             if (shapes[uidc.current].pts.has(currentTriangeId)) {
                     // wm("deleted at " + triple.id);
                 var action = ExtendTriangleAction;
-                if (shapes[shapeId].pts.values().length === 0) {
+                if (shapes[uidc.current].pts.values().length === 1) {
                     action = CreateTriangleAction;
                 }
                 invoker.push(action, "backward", [currentTriangeId, uidc.current]);
@@ -1046,6 +1046,7 @@ choose order of shapes
 choose colour of shapes
 don't zoom in the lines (we don't want thick lines)
 undo!!!
+allow for overlapping shapes (array in inverted index)
 
 
 COMMANDS - for undo
