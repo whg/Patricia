@@ -448,6 +448,14 @@ function Set() {
         delete this._values[e];
     }
 
+    this.clear = function() {
+        // is this._values = {} better?
+        for (var key in this._values) {
+            delete this._values[key];
+        }
+        this._values = {};
+    }
+
     this.values = function() {
         return Object.keys(this._values);
     };
@@ -706,7 +714,7 @@ function InvertedIndex() {
         if (i >= 0) {
             index[triangleId].splice(i, 1);
 
-            if (index.length === 0) {
+            if (index[triangleId].length === 0) {
                 delete index[triangleId];
             }
         }
@@ -922,7 +930,7 @@ function Action() {
             invertedIndex.add(tripleId, shapeId);
             wm("extend shape at " + tripleId);
 
-            current.triple = tripleId;
+            current.triple.id = tripleId;
             shapes.get(shapeId).draw();
 
             return "Extend";
@@ -951,26 +959,26 @@ function Action() {
             invoker.push(ExtendTriangleAction, "forward", [triple.id, current.shape]);
         }
         else {
-            if (invertedIndex.has(triple.id) && triple.id !== current.triple) {
-                invoker.push(ExtendTriangleAction, "backward", [current.triple, current.shape]);
+            if (invertedIndex.has(triple.id) && triple.id !== current.triple.id) {
+                invoker.push(ExtendTriangleAction, "backward", [current.triple.id, current.shape]);
             }
         }
-        current.triple = triple.id;
+        current.triple = triple;
         // ExtendTriangleAction.forward(triple);        
     }
 
     function findShape(event) {
         // console.log(invertedIndex);
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        current.triple = triple.id;
-        current.shape = shapes.highestFromArray(invertedIndex.at(current.triple));
+        current.triple = triple;
+        current.shape = shapes.highestFromArray(invertedIndex.at(current.triple.id));
          // current.triple = triple.id;
         // console.log(invertedIndex);
         // console.log(triple.id);
         if (current.shape === undefined) {
             current.shape = shapes.nextId();// uidc.next();
             // ASDFASD
-            invoker.push(CreateTriangleAction, "forward", [current.triple, current.shape]);
+            invoker.push(CreateTriangleAction, "forward", [current.triple.id, current.shape]);
         }
 
         
@@ -980,7 +988,7 @@ function Action() {
 
     function removeTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        if (invertedIndex.has(current.triple) && triple.id !== current.triple) {
+        if (invertedIndex.has(current.triple.id) && triple.id !== current.triple.id) {
                 // wm("removing at" + triple.id);
             if (shapes.get(current.shape).has(current.triple)) {
                     // wm("deleted at " + triple.id);
@@ -990,7 +998,7 @@ function Action() {
                 }
                 invoker.push(action, "backward", [current.triple, current.shape]);
             }
-            current.triple = triple.id;
+            current.triple = triple;
         }   
         
     }
@@ -999,19 +1007,46 @@ function Action() {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         var sid = shapes.highestFromArray(invertedIndex.at(triple.id)); //invertedIndex[triple.id];
 
+        console.log(modifierStates["shift"] + " " + sid);
+
         if (sid === undefined) {
-            for (var i = 0; i < current.selected; i++) {
-                shapes.get(current.selected[i]).outline.selected = false;
+            for (var shape in current.selected._values) {
+                shapes.get(shape).outline.selected = false;
             }
+
+            current.selected.clear();
         }
+        // else if (!modifierStates["shift"]) {
+            
+        // }
+        // else if ()
         else {
-            current.selected
+            if (!modifierStates["shift"]) {
+                for (var shape in current.selected._values) {
+                    shapes.get(shape).outline.selected = false;
+                }
+                
+                current.selected.clear();
+            }
+            console.log("sele");
+            
+            current.selected.add(sid);
             shapes.get(sid).outline.selected = true;
+
+            current.triple = triple;
         }
+        console.log(current.selected._values);
+        // for (var shape in current.selected._values) {
+        //     shapes.get(shape).outline.selected = true;
+        // }
+        
     }
 
-    function moveShapes() {
-        
+    function moveShapes(event) {
+        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        if (triple.id !== current.triple.id) {
+            console.log(current.triple);// + " -> " + triple.id);
+        }
     }
 
 
@@ -1035,6 +1070,7 @@ function Action() {
         "option": createMouseMode(none, none, pan, zoom),
         "d": createMouseMode(none, findShape, removeTriangle, pan),
         "m": createMouseMode(none, selectShapes, moveShapes, none),
+
     };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
@@ -1113,15 +1149,15 @@ function Action() {
     tool.onKeyDown = function onKeyDown(event) {
 
         var ret = true;
+
         // console.log(event);
         // modifiers are treated seperately because they
         // don't repeat the call to onKeyDown
         if (event.key in modifierStates) {
             pushedMode = currentKey;
             modifierStates[event.key] = true;
-            // console.log("ONE");
         }
-        else if (!pushedMode && currentKey === event.key) {
+        else if (!pushedMode && currentKey === event.key && lastKey === event.key) {
             // we have repeated
             pushedMode = lastKey;
             // console.log("pushed " + lastKey + "(" + currentKey + ")");
@@ -1143,7 +1179,7 @@ function Action() {
             lastKey = currentKey;
             currentKey = event.key;
         }
-        // console.log(lastKey + " -> " +currentKey + " " + event);
+        // console.log(lastKey + " -> " +currentKey); // + " " + event);
 
 
         
@@ -1157,7 +1193,7 @@ function Action() {
     tool.onKeyUp = function onKeyUp(event) {
         if (pushedMode) {
             currentKey = pushedMode;
-            // console.log("poped, current key = " + currentKey);
+            console.log("poped, current key = " + currentKey);
             pushedMode = false;
         }
         if (modifierStates[event.key] !== undefined) {
