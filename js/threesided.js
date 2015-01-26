@@ -47,6 +47,14 @@ function sorted(a) {
     return b; 
 }
 
+function extend(subclass, superclass) {
+    for (var key in superclass) {
+        subclass[key] = superclass[key];
+    }
+    return subclass;
+}
+
+
 function mergeObjects() {
     var r = {};
     for (var ak in arguments) {
@@ -419,18 +427,52 @@ function worldToTriple(point, alt) {
 //   s.add(5);
 function Set() {
     this._values = {};
-    this._universe = {};
-
-    var uv = Object.keys(createDatabase());
-    for (var i = 0; i < uv.length; i++) {
-        this._universe[uv[i]] = true;
-    }
-
+    
+    
     this.has = function(e) {
         // this is the fastest way to do this
         // http://jsperf.com/regex-vs-indexof-vs-in
         return this._values[e] !== undefined;
     };
+    
+
+    this.add = function(e) {
+        if (!this.has(e)) {
+            this._values[e] = e;
+            return true;
+        }
+        return false;
+    };
+
+    this.remove = function(e) {
+        delete this._values[e];
+    }
+
+    this.values = function() {
+        return Object.keys(this._values);
+    };
+
+    this.toString = function() {
+        return "Set( " + this.values().join(', ') + " )";
+    };
+
+    return this;
+}
+
+function SetWithUniverse(universe) {
+    // default universe is the database
+    extend(this, new Set());
+
+    this._universe = {};
+
+    var uv = universe;
+    if (universe === undefined) {
+        uv = Object.keys(createDatabase());
+    }
+
+    for (var i = 0; i < uv.length; i++) {
+        this._universe[uv[i]] = true;
+    }
 
     this.exists = function(e) {
         return this._universe[e] !== undefined;
@@ -443,20 +485,7 @@ function Set() {
         }
         return false;
     };
-
-    this.remove = function(e) {
-        console.log('removing ' + e);
-        delete this._values[e];
-    }
-
-    this.values = function() {
-        return Object.keys(this._values);
-    };
-
-    this.toString = function() {
-        return "Set( " + this.values().join(', ') + " )";
-    };
-
+    
     return this;
 }
 
@@ -628,16 +657,11 @@ function makeOutline(perims, outline) {
 }
 
 
-function extend(subclass, superclass) {
-    for (var key in superclass) {
-        subclass[key] = superclass[key];
-    }
-    return subclass;
-}
+
 
 function TShape(id) {
 
-    extend(this, new Set());
+    extend(this, new SetWithUniverse());
     
     // this.pts = new Set();
     this.id = id;
@@ -737,6 +761,7 @@ function Shapes() {
     };
 
     this.highestFromArray = function(arr) {
+
         if (arr === undefined) return undefined;
         
         var maxOrder = 0, highestShape = undefined;
@@ -790,7 +815,7 @@ function UI() {
 var ui = new UI();
 // var shapes = {};
 // var currentTriangeId = null;
-var current = { triple: null, shape: null };
+var current = { triple: null, shape: null, selected: new Set() };
 
 function Command(action, direction, args) {
     this.action = action;
@@ -970,16 +995,25 @@ function Action() {
         
     }
 
-    function selectShape(event) {
-        // var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        // var sid = shapes.highestFromArray(invertedIndex.at(triple.id)); //invertedIndex[triple.id];
-        // for (var key in shapes) {
-        //     shapes.get(key).outline.selected = false;
-        // }
-        // if (sid !== undefined) {
-        //     shapes.get(sid).outline.selected = true;
-        // }
+    function selectShapes(event) {
+        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        var sid = shapes.highestFromArray(invertedIndex.at(triple.id)); //invertedIndex[triple.id];
+
+        if (sid === undefined) {
+            for (var i = 0; i < current.selected; i++) {
+                shapes.get(current.selected[i]).outline.selected = false;
+            }
+        }
+        else {
+            current.selected
+            shapes.get(sid).outline.selected = true;
+        }
     }
+
+    function moveShapes() {
+        
+    }
+
 
     function createMouseMode(init, mouseDown, mouseDrag, mouseScroll) {
         return {
@@ -997,9 +1031,10 @@ function Action() {
     var modes = {
         "v": createMouseMode(none, none, pan, zoom),
         "a": createMouseMode(none, findShape, addTriangle, pan),
-        "s": createMouseMode(none, selectShape, none, none),
+        "s": createMouseMode(none, selectShapes, none, none),
         "option": createMouseMode(none, none, pan, zoom),
         "d": createMouseMode(none, findShape, removeTriangle, pan),
+        "m": createMouseMode(none, selectShapes, moveShapes, none),
     };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
