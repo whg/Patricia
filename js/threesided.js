@@ -661,7 +661,48 @@ function TShape(id) {
     return this;
 }
 
-var invertedIndex = {};
+
+
+function InvertedIndex() {
+
+    var index = {};
+
+    this.add = function(triangleId, shapeId) {
+        if (index[triangleId] === undefined) {
+            index[triangleId] = [shapeId];
+        }
+        else {
+            index[triangleId].push(shapeId);
+        }
+    }
+
+    this.remove = function(triangleId, shapeId) {
+        // let's presume triangleId exists in index
+        var i = index[triangleId].indexOf(shapeId);
+        if (i >= 0) {
+            index[triangleId].splice(i, 1);
+
+            if (index.length === 0) {
+                delete index[triangleId];
+            }
+        }
+    }
+
+    this.has = function(triangleId) {
+        return index[triangleId] !== undefined && index[triangleId].length > 0;
+    }
+
+    this.at = function(triangleId) {
+        return index[triangleId];
+    }
+
+    this.values = function() {
+        return index;
+    }
+}
+
+var invertedIndex = new InvertedIndex;
+
 
 function Shapes() {
 
@@ -695,11 +736,25 @@ function Shapes() {
         });
     };
 
+    this.highestFromArray = function(arr) {
+        if (arr === undefined) return undefined;
+        
+        var maxOrder = 0, highestShape = undefined;
+
+        for (var i = 0; i < arr.length; i++) {
+
+            var shapeId = arr[i];
+            if (shapes[shapeId].order > maxOrder) {
+                highestShape = shapeId;
+                maxOrder = shapes[shapeId].order;
+            }
+        }
+        return highestShape;
+    }
     
     return this;
 }
 var shapes = new Shapes();
-
 
 
 function UI() {
@@ -735,7 +790,7 @@ function UI() {
 var ui = new UI();
 // var shapes = {};
 // var currentTriangeId = null;
-var current = { "triangle": null, "shape": null };
+var current = { triple: null, shape: null };
 
 function Command(action, direction, args) {
     this.action = action;
@@ -826,7 +881,8 @@ function Action() {
         },
         "backward": function(tripleId, shapeId){
             shapes.remove(shapeId);
-            delete invertedIndex[tripleId];
+            // delete invertedIndex[tripleId];
+            invertedIndex.remove(tripleId, shapeId);
             return "Delete";
         },
     };
@@ -837,10 +893,11 @@ function Action() {
 
             //it's new so update the inverted index
             shapes.get(shapeId).add(tripleId);
-            invertedIndex[tripleId] = shapeId;
-            wm("new shape at " + tripleId);
+            // invertedIndex[tripleId] = shapeId;
+            invertedIndex.add(tripleId, shapeId);
+            wm("extend shape at " + tripleId);
 
-            current.triangle = tripleId;
+            current.triple = tripleId;
             shapes.get(shapeId).draw();
 
             return "Extend";
@@ -850,9 +907,10 @@ function Action() {
         "backward": function(tripleId, shapeId) {
 
             shapes.get(shapeId).remove(tripleId);
-            delete invertedIndex[tripleId];
+            // delete invertedIndex[tripleId];
+            invertedIndex.remove(tripleId, shapeId);
             shapes.get(shapeId).draw();
-            
+            wm("shink shape at " + tripleId);
             return "Shrink";
         },
         
@@ -868,56 +926,59 @@ function Action() {
             invoker.push(ExtendTriangleAction, "forward", [triple.id, current.shape]);
         }
         else {
-            if (invertedIndex[triple.id] !== undefined && triple.id !== current.triangle) {
-                invoker.push(ExtendTriangleAction, "backward", [current.triangle, current.shape]);
+            if (invertedIndex.has(triple.id) && triple.id !== current.triple) {
+                invoker.push(ExtendTriangleAction, "backward", [current.triple, current.shape]);
             }
         }
-        current.triangle = triple.id;
+        current.triple = triple.id;
         // ExtendTriangleAction.forward(triple);        
     }
 
     function findShape(event) {
         // console.log(invertedIndex);
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        var shapeId = invertedIndex[triple.id];
+        current.triple = triple.id;
+        current.shape = shapes.highestFromArray(invertedIndex.at(current.triple));
+         // current.triple = triple.id;
         // console.log(invertedIndex);
         // console.log(triple.id);
-        if (shapeId === undefined) {
-            shapeId = shapes.nextId();// uidc.next();
+        if (current.shape === undefined) {
+            current.shape = shapes.nextId();// uidc.next();
             // ASDFASD
-            invoker.push(CreateTriangleAction, "forward", [triple.id, shapeId]);
+            invoker.push(CreateTriangleAction, "forward", [current.triple, current.shape]);
         }
-        current.shape = shapeId;
-        // console.log("current id = " + currentUID);
-        current.triangle = triple.id;
+
+        
+        console.log("current shape = " + current.shape);
+       
     }
 
     function removeTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        if (invertedIndex[current.triangle] !== undefined && triple.id !== current.triangle) {
+        if (invertedIndex.has(current.triple) && triple.id !== current.triple) {
                 // wm("removing at" + triple.id);
-            if (shapes.get(current.shape).has(current.triangle)) {
+            if (shapes.get(current.shape).has(current.triple)) {
                     // wm("deleted at " + triple.id);
                 var action = ExtendTriangleAction;
                 if (shapes.get(current.shape).values().length === 1) {
                     action = CreateTriangleAction;
                 }
-                invoker.push(action, "backward", [current.triangle, current.shape]);
+                invoker.push(action, "backward", [current.triple, current.shape]);
             }
-            current.triangle = triple.id;
+            current.triple = triple.id;
         }   
         
     }
 
     function selectShape(event) {
-        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        var sid = invertedIndex[triple.id];
-        for (var key in shapes) {
-            shapes.get(key).outline.selected = false;
-        }
-        if (sid !== undefined) {
-            shapes.get(sid).outline.selected = true;
-        }
+        // var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        // var sid = shapes.highestFromArray(invertedIndex.at(triple.id)); //invertedIndex[triple.id];
+        // for (var key in shapes) {
+        //     shapes.get(key).outline.selected = false;
+        // }
+        // if (sid !== undefined) {
+        //     shapes.get(sid).outline.selected = true;
+        // }
     }
 
     function createMouseMode(init, mouseDown, mouseDrag, mouseScroll) {

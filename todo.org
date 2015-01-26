@@ -1,20 +1,22 @@
 
 # * TODO
-* TODO make Tshape a subclass of Set?
 * TODO move shapes
 * TODO delete shapes
 * TODO choose colour of shapes
 colours should be kept in another data structure other than the
 shapes array/holder. this is so undo deleting shapes works a bit
 nicer. will work fine as shape id are not reused.
-
-* TODO allow for overlapping shapes (array in inverted index)
 * TODO erase mode
 * TODO better modes for operation
 * TODO merge shapes (into one colour)
 * TODO continue/merge line in shape
 the straight line of a shape are all little triangle segments
 * TODO make it real
+* DONE make Tshape a subclass of Set?
+CLOSED: [2015-01-26 Mon 19:14]
+
+* DONE allow for overlapping shapes (array in inverted index)
+CLOSED: [2015-01-26 Mon 19:14]
 * DONE choose order of shapes
 CLOSED: [2015-01-26 Mon 17:44]
 using jquery ui
