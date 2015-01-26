@@ -642,6 +642,7 @@ var invertedIndex = {};
 function TShape(id) {
     this.pts = new Set();
     this.id = id;
+    this.order = Object.keys(shapes).length;
     this.outline = new CompoundPath({
         strokeColor: 'black',
         fillColor: new Color(1.0, id/2.0, 1.0), //"#cfe",
@@ -649,17 +650,76 @@ function TShape(id) {
     });
     this.q = id/10.0;
     // this.outline.fillColor = new Color(0.8*this.q, this.q, 0.93*this.q);
-    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random(), 0.4);
+    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random()); //, 0.4);
 
     this.draw = function() {
         var outerEdges = getPerimeterEdges(this.pts);
         var perim = pathFromPerimeterEdges(outerEdges);
         makeOutline(perim, this.outline);  
     };
+
+    
+    
     
     return this;
 }
 
+function Shapes() {
+    
+}
+
+function shapeIdOrder(shapes) {
+    return Object.keys(shapes).sort(function(a,b){
+        return shapes[a].order - shapes[b].order
+    });
+}
+
+function UI() {
+
+    $("#shapes").sortable({
+        update: function(event, ui) {
+
+
+            var ordered = $(this).sortable("toArray", { "attribute": "key" });
+            var moved = {};
+            for (var i = 0; i < ordered.length; i++) {
+                // console.log(shapes[ordered[i]].order + " (" + i + ", " + ordered[i] + ")") ;
+                var key = ordered[i];
+
+                if (shapes[key].order != i) {
+                    moved[key] = i;
+                }
+                shapes[key].order = i;
+                // shapes[ordered[i]].outline.draw();
+                // project.activeLayer.addChild(shapes[ordered[i]].outline);
+            }
+            console.log("moved");
+            // console.log(orderedIds);
+            // var i = 0;
+            // project.activeLayer.removeChildren();
+            // for (var key in shapes) {
+            //     shapes[key].draw();
+            //     console.log(shapes[key].id +", "+(shapes[key].order));
+            // }
+        },
+        change: function(event, ui) {
+            console.log($(ui.item).attr("key"));
+        }
+    });
+  
+    
+    this.updateShapes = function() {
+        var ids = shapeIdOrder(shapes);
+        $("#shapes").html("");
+        for (var i = 0, shape = null; i < ids.length; i++) {
+            shape = shapes[ids[i]];
+            $("#shapes").append("<li key='" + shape.id + "'>Shape " + shape.id + "</li>");
+        }
+    }
+
+    return this;
+}
+var ui = new UI();
 var shapes = {};
 var currentTriangeId = null;
 
@@ -734,7 +794,6 @@ function Action() {
     }
 
     // function ExtendTriangleAction(direction) {
-        
     // }
 
     var CreateTriangleAction = {
@@ -745,6 +804,9 @@ function Action() {
             invertedIndex[tripleId] = shapeId;
             // addTriangle(event);
             ExtendTriangleAction.forward(tripleId, shapeId);
+
+            //update UI
+            ui.updateShapes();
 
             return "Create";
         },
@@ -788,10 +850,16 @@ function Action() {
     
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        // if (shapes[uidc.current].pts.add(triple.id)) {
+
         if (!shapes[uidc.current].pts.has(triple.id)) {
             invoker.push(ExtendTriangleAction, "forward", [triple.id, uidc.current]);
         }
+        else {
+            if (invertedIndex[triple.id] !== undefined && triple.id !== currentTriangeId) {
+                invoker.push(ExtendTriangleAction, "backward", [currentTriangeId, uidc.current]);
+            }
+        }
+        currentTriangeId = triple.id;
         // ExtendTriangleAction.forward(triple);        
     }
 
@@ -831,6 +899,9 @@ function Action() {
     function selectShape(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         var sid = invertedIndex[triple.id];
+        for (var key in shapes) {
+            shapes[key].outline.selected = false;
+        }
         if (sid !== undefined) {
             shapes[sid].outline.selected = true;
         }
@@ -851,7 +922,7 @@ function Action() {
     
     var modes = {
         "v": createMouseMode(none, none, pan, zoom),
-        "a": createMouseMode(function() {}, findShape, addTriangle, pan),
+        "a": createMouseMode(none, findShape, addTriangle, pan),
         "s": createMouseMode(none, selectShape, none, none),
         "option": createMouseMode(none, none, pan, zoom),
         "d": createMouseMode(none, findShape, removeTriangle, pan),
@@ -890,7 +961,7 @@ function Action() {
     }
 
     function KeyComboHandler() {
-        this.combos = {};
+        var combos = {};
 
         function keysFromEvent(event) {
             var keys = [];
@@ -909,14 +980,14 @@ function Action() {
         }
 
         this.add = function(keys, func) {
-            this.combos[makeKeyComboId(keys)] = func;
+            combos[makeKeyComboId(keys)] = func;
         }
 
         this.call = function(event) {
             var keys = keysFromEvent(event);
             var id = makeKeyComboId(keys);
-            if (this.combos[id] !== undefined) {
-                this.combos[id]();
+            if (combos[id] !== undefined) {
+                combos[id]();
                 // this.combos[id].apply(this)
                 event.preventDefault();
                 return false;
@@ -925,9 +996,9 @@ function Action() {
     }
 
     var keyHandler = new KeyComboHandler();
-    keyHandler.add(["command", "shift", "z"], function() { invoker.redo(); });
+    keyHandler.add(["command", "shift", "z"], invoker.redo); //function() { invoker.redo(); });
     // keyHandler.add(["q", "shift"], function() { console.log("BIG QQQ!")});
-    keyHandler.add(["command", "z"], function() { invoker.undo(); });
+    keyHandler.add(["command", "z"], invoker.undo); //function() { invoker.undo(); });
     
 
     tool.onKeyDown = function onKeyDown(event) {
@@ -1037,21 +1108,14 @@ view.draw();
 
 /*
 
-TODO:
-
-remove parts of shape
-choose order of shapes
-choose colour of shapes
-don't zoom in the lines (we don't want thick lines)
-undo!!!
-allow for overlapping shapes (array in inverted index)
-
-
 COMMANDS - for undo
 - add triangle
 - remove triangle
 - 
 
+MODES
+
+constructive mode - everthing drag
 notes
 
 

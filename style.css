@@ -10,9 +10,18 @@ body {
     float: left;
 }
 
-#messages {
+#sidebar {
     float: left;
-    margin-left: 10px;
+    margin: 10px;
+    /* height: 300px; */
+}
+
+/* #shapes { */
+/*     margin-top: 350px; */
+/* } */
+
+#messages {
+    height: 250px;
 }
 
 #messages p {
