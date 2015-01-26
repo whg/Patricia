@@ -25,19 +25,43 @@ function Triple(n, p, h) {
 
     this.clone = function() {
         return new Triple(this.n, this.p, this.h);
-    }
+    };
 
     this.sum = function() {
         return this.n + this.p + this.h;
-    }
+    };
 
     this.map = function(cb) {
         return new Triple(cb(this.n), cb(this.p), cb(this.h));
-    }
+    };
 
+    this.subtract = function(triple, inplace) {
+        if (!inplace) {
+            return new Triple(this.n - triple.n, this.p - triple.p, this.h - triple.h);
+        }
+        this.n -= triple.n;
+        this.p -= triple.p;
+        this.h -= triple.h;
+        return this;
+    };
+
+    this.add = function(triple, inplace) {
+        if (!inplace) {
+            return new Triple(this.n + triple.n, this.p + triple.p, this.h + triple.h);
+        }
+        this.n += triple.n;
+        this.p += triple.p;
+        this.h += triple.h;
+        return this;
+    };
+    
+    this.inverse = function() {
+        return new Triple(-this.n, -this.p, -this.h);
+    };
+    
     this.toString = function() {
         return this.n + "," + this.p + "," + this.h;
-    }
+    };
 }
 
 
@@ -460,6 +484,14 @@ function Set() {
         return Object.keys(this._values);
     };
 
+    this.items = function() {
+        var temp = {};
+        for (var key in this._values) {
+            temp[key] = this._values[key];
+        }
+        return temp;
+    };
+    
     this.toString = function() {
         return "Set( " + this.values().join(', ') + " )";
     };
@@ -676,7 +708,7 @@ function TShape(id) {
         // closed: true,
     });
 
-    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random()); //, 0.4);
+    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random(), 0.4);
     this.outline.id = id;
     this.draw = function() {
         var outerEdges = getPerimeterEdges(this);
@@ -702,7 +734,7 @@ function InvertedIndex() {
         else {
             index[tripleId].push(shapeId);
         }
-    }
+    };
 
     this.remove = function(tripleId, shapeId) {
         // let's presume tripleId exists in index
@@ -714,19 +746,25 @@ function InvertedIndex() {
                 delete index[tripleId];
             }
         }
-    }
+    };
+
+    this.removeShape = function(shape) {
+        for (var tripleId in shape._values) {
+            this.remove(tripleId, shape.id);
+        }
+    };
 
     this.has = function(tripleId) {
         return index[tripleId] !== undefined && index[tripleId].length > 0;
-    }
+    };
 
     this.at = function(tripleId) {
         return index[tripleId];
-    }
+    };
 
     this.values = function() {
         return index;
-    }
+    };
 }
 
 var invertedIndex = new InvertedIndex;
@@ -757,6 +795,7 @@ function Shapes() {
         delete shapes[key];
 
     };
+
 
     this.keysInOrder = function() {
         return Object.keys(shapes).sort(function(a,b){
@@ -841,8 +880,8 @@ function Command(action, direction, args) {
             dir = reverse(dir);
         }
 
-        var name = this.action[dir].apply(undefined, this.args);
-        console.log("executed " + name + " with " + this.args);
+        var name = this.action[dir].apply(this.action, this.args);
+        console.log("executed " + name + " with " + JSON.stringify(this.args));
     };
 
     return this;
@@ -891,17 +930,16 @@ function Action() {
         project.activeLayer.scale(1 + (event.delta.y * 0.005), event.point);
     }
 
-    // function ExtendTriangleAction(direction) {
+    // function ExtendShapeAction(direction) {
     // }
 
     var CreateTriangleAction = {
-        "name": "CreateTriangle",
         "forward": function(triple, shapeId){
 
             shapes.add(shapeId);
             // invertedIndex[triple] = shapeId;
             // addTriangle(event);
-            ExtendTriangleAction.forward(triple, shapeId);
+            ExtendShapeAction.forward(triple, shapeId);
 
             //update UI
             ui.updateShapes();
@@ -916,8 +954,7 @@ function Action() {
         },
     };
 
-    var ExtendTriangleAction = {
-        "name": "ExtendTriangle",
+    var ExtendShapeAction = {
         "forward": function(triple, shapeId) {
 
             //it's new so update the inverted index
@@ -952,15 +989,15 @@ function Action() {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
 
         if (!shapes.get(current.shape).has(triple)) {
-            invoker.push(ExtendTriangleAction, "forward", [triple, current.shape]);
+            invoker.push(ExtendShapeAction, "forward", [triple, current.shape]);
         }
         else {
             if (invertedIndex.has(triple.id) && triple.id !== current.triple.id) {
-                invoker.push(ExtendTriangleAction, "backward", [current.triple, current.shape]);
+                invoker.push(ExtendShapeAction, "backward", [current.triple, current.shape]);
             }
         }
         current.triple = triple;
-        // ExtendTriangleAction.forward(triple);        
+        // ExtendShapeAction.forward(triple);        
     }
 
     function findShape(event) {
@@ -988,7 +1025,7 @@ function Action() {
                 // wm("removing at" + triple.id);
             if (shapes.get(current.shape).has(current.triple)) {
                     // wm("deleted at " + triple.id);
-                var action = ExtendTriangleAction;
+                var action = ExtendShapeAction;
                 if (shapes.get(current.shape).values().length === 1) {
                     action = CreateTriangleAction;
                 }
@@ -1024,25 +1061,74 @@ function Action() {
                 
                 current.selected.clear();
             }
-            console.log("sele");
+            // console.log("sele");
             
             current.selected.add(sid);
             shapes.get(sid).outline.selected = true;
 
             current.triple = triple;
         }
-        console.log(current.selected._values);
+        // console.log(current.selected._values);
         // for (var shape in current.selected._values) {
         //     shapes.get(shape).outline.selected = true;
         // }
         
     }
 
+    var MoveShapeAction = {
+        "forward": function(shapeIds, moveTriple){
+
+            var shape, items, triple;
+
+            for (var i = 0; i < shapeIds.length; i++) {
+                shape = shapes.get(shapeIds[i]);
+                items = shape.items();
+                invertedIndex.removeShape(shape);
+                shape.clear();
+                for (var key in items) {
+                    triple = items[key].add(moveTriple);
+                    shape.add(triple);
+                    invertedIndex.add(triple.id, shape.id);
+
+                }
+                shape.draw();
+            }
+
+            return "Move " + moveTriple;
+        },
+        "backward": function(shapeIds, moveTriple){
+            console.log("adfsasdfkljasd " + moveTriple);
+            return this.forward(shapeIds, moveTriple.inverse());
+        },
+    };
+
+
     function moveShapes(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        if (triple.id !== current.triple.id) {
-            console.log(current.triple);// + " -> " + triple.id);
+        if (triple.id !== current.triple.id && triangleDirection(triple) === triangleDirection(current.triple)) {
+            var moveTriple = triple.subtract(current.triple);
+            invoker.push(MoveShapeAction, "forward", [current.selected.values(), moveTriple]);
+
+                        // var shape, items, triple;
+
+            // console.log(difftriple);
+            // for (var shapeId in current.selected._values) {
+            //     shape = shapes.get(shapeId);
+            //     items = shape.items();
+            //     invertedIndex.removeShape(shape);
+            //     shape.clear();
+            //     for (var key in items) {
+            //         triple = items[key].add(difftriple);
+            //         shape.add(triple);
+            //         invertedIndex.add(triple.id, shape.id);
+
+            //     }
+            //     shape.draw();
+            // }
+
+            current.triple = triple;
         }
+        
     }
 
 

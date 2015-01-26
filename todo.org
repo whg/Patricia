@@ -1,6 +1,8 @@
 
 # * TODO
-* TODO move shapes
+* DONE move shapes
+CLOSED: [2015-01-26 Mon 23:01]
+done with undo
 * TODO delete shapes
 * TODO choose colour of shapes
 colours should be kept in another data structure other than the
