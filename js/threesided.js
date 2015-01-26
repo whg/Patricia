@@ -471,16 +471,12 @@ function SetWithUniverse(universe) {
     // default universe is the database
     extend(this, new Set());
 
-    this._universe = {};
+    this._universe = universe;
 
-    var uv = universe;
     if (universe === undefined) {
-        uv = Object.keys(createDatabase());
+        this._universe = createDatabase();
     }
 
-    for (var i = 0; i < uv.length; i++) {
-        this._universe[uv[i]] = true;
-    }
 
     this.exists = function(e) {
         return this._universe[e] !== undefined;
@@ -699,33 +695,33 @@ function InvertedIndex() {
 
     var index = {};
 
-    this.add = function(triangleId, shapeId) {
-        if (index[triangleId] === undefined) {
-            index[triangleId] = [shapeId];
+    this.add = function(tripleId, shapeId) {
+        if (index[tripleId] === undefined) {
+            index[tripleId] = [shapeId];
         }
         else {
-            index[triangleId].push(shapeId);
+            index[tripleId].push(shapeId);
         }
     }
 
-    this.remove = function(triangleId, shapeId) {
-        // let's presume triangleId exists in index
-        var i = index[triangleId].indexOf(shapeId);
+    this.remove = function(tripleId, shapeId) {
+        // let's presume tripleId exists in index
+        var i = index[tripleId].indexOf(shapeId);
         if (i >= 0) {
-            index[triangleId].splice(i, 1);
+            index[tripleId].splice(i, 1);
 
-            if (index[triangleId].length === 0) {
-                delete index[triangleId];
+            if (index[tripleId].length === 0) {
+                delete index[tripleId];
             }
         }
     }
 
-    this.has = function(triangleId) {
-        return index[triangleId] !== undefined && index[triangleId].length > 0;
+    this.has = function(tripleId) {
+        return index[tripleId] !== undefined && index[tripleId].length > 0;
     }
 
-    this.at = function(triangleId) {
-        return index[triangleId];
+    this.at = function(tripleId) {
+        return index[tripleId];
     }
 
     this.values = function() {
@@ -900,50 +896,50 @@ function Action() {
 
     var CreateTriangleAction = {
         "name": "CreateTriangle",
-        "forward": function(tripleId, shapeId){
+        "forward": function(triple, shapeId){
 
             shapes.add(shapeId);
-            // invertedIndex[tripleId] = shapeId;
+            // invertedIndex[triple] = shapeId;
             // addTriangle(event);
-            ExtendTriangleAction.forward(tripleId, shapeId);
+            ExtendTriangleAction.forward(triple, shapeId);
 
             //update UI
             ui.updateShapes();
 
             return "Create";
         },
-        "backward": function(tripleId, shapeId){
+        "backward": function(triple, shapeId){
             shapes.remove(shapeId);
-            // delete invertedIndex[tripleId];
-            invertedIndex.remove(tripleId, shapeId);
+            // delete invertedIndex[triple];
+            invertedIndex.remove(triple.id, shapeId);
             return "Delete";
         },
     };
 
     var ExtendTriangleAction = {
         "name": "ExtendTriangle",
-        "forward": function(tripleId, shapeId) {
+        "forward": function(triple, shapeId) {
 
             //it's new so update the inverted index
-            shapes.get(shapeId).add(tripleId);
-            // invertedIndex[tripleId] = shapeId;
-            invertedIndex.add(tripleId, shapeId);
-            wm("extend shape at " + tripleId);
+            shapes.get(shapeId).add(triple);
+            // invertedIndex[triple] = shapeId;
+            invertedIndex.add(triple.id, shapeId);
+            wm("extend shape at " + triple);
 
-            current.triple.id = tripleId;
+            current.triple.id = triple;
             shapes.get(shapeId).draw();
 
             return "Extend";
 
         },
         
-        "backward": function(tripleId, shapeId) {
+        "backward": function(triple, shapeId) {
 
-            shapes.get(shapeId).remove(tripleId);
-            // delete invertedIndex[tripleId];
-            invertedIndex.remove(tripleId, shapeId);
+            shapes.get(shapeId).remove(triple);
+            // delete invertedIndex[triple];
+            invertedIndex.remove(triple.id, shapeId);
             shapes.get(shapeId).draw();
-            wm("shink shape at " + tripleId);
+            wm("shink shape at " + triple.id);
             return "Shrink";
         },
         
@@ -955,12 +951,12 @@ function Action() {
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
 
-        if (!shapes.get(current.shape).has(triple.id)) {
-            invoker.push(ExtendTriangleAction, "forward", [triple.id, current.shape]);
+        if (!shapes.get(current.shape).has(triple)) {
+            invoker.push(ExtendTriangleAction, "forward", [triple, current.shape]);
         }
         else {
             if (invertedIndex.has(triple.id) && triple.id !== current.triple.id) {
-                invoker.push(ExtendTriangleAction, "backward", [current.triple.id, current.shape]);
+                invoker.push(ExtendTriangleAction, "backward", [current.triple, current.shape]);
             }
         }
         current.triple = triple;
@@ -978,7 +974,7 @@ function Action() {
         if (current.shape === undefined) {
             current.shape = shapes.nextId();// uidc.next();
             // ASDFASD
-            invoker.push(CreateTriangleAction, "forward", [current.triple.id, current.shape]);
+            invoker.push(CreateTriangleAction, "forward", [current.triple, current.shape]);
         }
 
         
