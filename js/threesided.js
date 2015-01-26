@@ -628,10 +628,18 @@ function makeOutline(perims, outline) {
 }
 
 
-
+function extend(subclass, superclass) {
+    for (var key in superclass) {
+        subclass[key] = superclass[key];
+    }
+    return subclass;
+}
 
 function TShape(id) {
-    this.pts = new Set();
+
+    extend(this, new Set());
+    
+    // this.pts = new Set();
     this.id = id;
     this.order = Object.keys(shapes).length;
     this.outline = new CompoundPath({
@@ -643,14 +651,18 @@ function TShape(id) {
     this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random()); //, 0.4);
     this.outline.id = id;
     this.draw = function() {
-        var outerEdges = getPerimeterEdges(this.pts);
+        var outerEdges = getPerimeterEdges(this);
         var perim = pathFromPerimeterEdges(outerEdges);
         makeOutline(perim, this.outline);  
     };   
+
+
     
     return this;
 }
+
 var invertedIndex = {};
+
 function Shapes() {
 
     var shapes = {};
@@ -824,7 +836,7 @@ function Action() {
         "forward": function(tripleId, shapeId) {
 
             //it's new so update the inverted index
-            shapes.get(shapeId).pts.add(tripleId);
+            shapes.get(shapeId).add(tripleId);
             invertedIndex[tripleId] = shapeId;
             wm("new shape at " + tripleId);
 
@@ -837,7 +849,7 @@ function Action() {
         
         "backward": function(tripleId, shapeId) {
 
-            shapes.get(shapeId).pts.remove(tripleId);
+            shapes.get(shapeId).remove(tripleId);
             delete invertedIndex[tripleId];
             shapes.get(shapeId).draw();
             
@@ -852,7 +864,7 @@ function Action() {
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
 
-        if (!shapes.get(current.shape).pts.has(triple.id)) {
+        if (!shapes.get(current.shape).has(triple.id)) {
             invoker.push(ExtendTriangleAction, "forward", [triple.id, current.shape]);
         }
         else {
@@ -884,10 +896,10 @@ function Action() {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         if (invertedIndex[current.triangle] !== undefined && triple.id !== current.triangle) {
                 // wm("removing at" + triple.id);
-            if (shapes[current.shape].pts.has(current.triangle)) {
+            if (shapes.get(current.shape).has(current.triangle)) {
                     // wm("deleted at " + triple.id);
                 var action = ExtendTriangleAction;
-                if (shapes[current.shape].pts.values().length === 1) {
+                if (shapes.get(current.shape).values().length === 1) {
                     action = CreateTriangleAction;
                 }
                 invoker.push(action, "backward", [current.triangle, current.shape]);
