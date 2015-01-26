@@ -267,7 +267,7 @@ function drawGrid() {
     drawGridLines('P', new Index(nx, ny));
     drawGridLines('H', new Index(nx, ny));
 }
-
+drawGrid();
 
 function _project(point, line) {
     /// use dot product to project a point on to a line
@@ -628,16 +628,7 @@ function makeOutline(perims, outline) {
 }
 
 
-function UIDCenter() {
-    this._v = 0;
-    this.next = function() {
-        this.current = this._v++;
-        return this.current;
-    };
-    this.current = 0;
-}
-var uidc = new UIDCenter();
-var invertedIndex = {};
+
 
 function TShape(id) {
     this.pts = new Set();
@@ -648,71 +639,81 @@ function TShape(id) {
         fillColor: new Color(1.0, id/2.0, 1.0), //"#cfe",
         // closed: true,
     });
-    this.q = id/10.0;
-    // this.outline.fillColor = new Color(0.8*this.q, this.q, 0.93*this.q);
-    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random()); //, 0.4);
 
+    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random()); //, 0.4);
+    this.outline.id = id;
     this.draw = function() {
         var outerEdges = getPerimeterEdges(this.pts);
         var perim = pathFromPerimeterEdges(outerEdges);
         makeOutline(perim, this.outline);  
-    };
-
-    
-    
+    };   
     
     return this;
 }
-
+var invertedIndex = {};
 function Shapes() {
-    
-}
 
-function shapeIdOrder(shapes) {
-    return Object.keys(shapes).sort(function(a,b){
-        return shapes[a].order - shapes[b].order
-    });
+    var shapes = {};
+    this.layer = new Group();
+
+    var ids = 0;
+    this.nextId = function() {
+        return ids++;
+    };
+    
+    
+    this.get = function(key) {
+        return shapes[key];
+    };
+
+    this.add = function(key) {
+        shapes[key] = new TShape(key);
+        // shapes[key].outline.setLayer(layer);
+    };
+
+    this.remove = function(key) {
+        shapes[key].outline.remove();
+        delete shapes[key];
+
+    };
+
+    this.keysInOrder = function() {
+        return Object.keys(shapes).sort(function(a,b){
+            return shapes[a].order - shapes[b].order;
+        });
+    };
+
+    
+    return this;
 }
+var shapes = new Shapes();
+
+
 
 function UI() {
-
+    
     $("#shapes").sortable({
         update: function(event, ui) {
 
-
             var ordered = $(this).sortable("toArray", { "attribute": "key" });
-            var moved = {};
             for (var i = 0; i < ordered.length; i++) {
-                // console.log(shapes[ordered[i]].order + " (" + i + ", " + ordered[i] + ")") ;
                 var key = ordered[i];
-
-                if (shapes[key].order != i) {
-                    moved[key] = i;
-                }
-                shapes[key].order = i;
-                // shapes[ordered[i]].outline.draw();
-                // project.activeLayer.addChild(shapes[ordered[i]].outline);
+                shapes.layer.insertChild(i, shapes.get(key).outline);
+                shapes.get(key).order = i;
             }
-            console.log("moved");
-            // console.log(orderedIds);
-            // var i = 0;
-            // project.activeLayer.removeChildren();
-            // for (var key in shapes) {
-            //     shapes[key].draw();
-            //     console.log(shapes[key].id +", "+(shapes[key].order));
-            // }
+            project.view.draw();
         },
         change: function(event, ui) {
-            console.log($(ui.item).attr("key"));
+            
         }
     });
   
     
     this.updateShapes = function() {
-        var ids = shapeIdOrder(shapes);
+        var ids = shapes.keysInOrder(shapes);
         $("#shapes").html("");
         for (var i = 0, shape = null; i < ids.length; i++) {
-            shape = shapes[ids[i]];
+            shape = shapes.get(ids[i]);
             $("#shapes").append("<li key='" + shape.id + "'>Shape " + shape.id + "</li>");
         }
     }
@@ -720,8 +721,9 @@ function UI() {
     return this;
 }
 var ui = new UI();
-var shapes = {};
-var currentTriangeId = null;
+// var shapes = {};
+// var currentTriangeId = null;
+var current = { "triangle": null, "shape": null };
 
 function Command(action, direction, args) {
     this.action = action;
@@ -800,8 +802,8 @@ function Action() {
         "name": "CreateTriangle",
         "forward": function(tripleId, shapeId){
 
-            shapes[shapeId] = new TShape(shapeId);
-            invertedIndex[tripleId] = shapeId;
+            shapes.add(shapeId);
+            // invertedIndex[tripleId] = shapeId;
             // addTriangle(event);
             ExtendTriangleAction.forward(tripleId, shapeId);
 
@@ -811,9 +813,8 @@ function Action() {
             return "Create";
         },
         "backward": function(tripleId, shapeId){
-            shapes[shapeId].outline.remove();
-            delete shapes[shapeId];
-
+            shapes.remove(shapeId);
+            delete invertedIndex[tripleId];
             return "Delete";
         },
     };
@@ -823,12 +824,12 @@ function Action() {
         "forward": function(tripleId, shapeId) {
 
             //it's new so update the inverted index
-            shapes[shapeId].pts.add(tripleId);
+            shapes.get(shapeId).pts.add(tripleId);
             invertedIndex[tripleId] = shapeId;
             wm("new shape at " + tripleId);
 
-            currentTriangeId = tripleId;
-            shapes[shapeId].draw();
+            current.triangle = tripleId;
+            shapes.get(shapeId).draw();
 
             return "Extend";
 
@@ -836,9 +837,9 @@ function Action() {
         
         "backward": function(tripleId, shapeId) {
 
-            shapes[shapeId].pts.remove(tripleId);
+            shapes.get(shapeId).pts.remove(tripleId);
             delete invertedIndex[tripleId];
-            shapes[shapeId].draw();
+            shapes.get(shapeId).draw();
             
             return "Shrink";
         },
@@ -851,15 +852,15 @@ function Action() {
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
 
-        if (!shapes[uidc.current].pts.has(triple.id)) {
-            invoker.push(ExtendTriangleAction, "forward", [triple.id, uidc.current]);
+        if (!shapes.get(current.shape).pts.has(triple.id)) {
+            invoker.push(ExtendTriangleAction, "forward", [triple.id, current.shape]);
         }
         else {
-            if (invertedIndex[triple.id] !== undefined && triple.id !== currentTriangeId) {
-                invoker.push(ExtendTriangleAction, "backward", [currentTriangeId, uidc.current]);
+            if (invertedIndex[triple.id] !== undefined && triple.id !== current.triangle) {
+                invoker.push(ExtendTriangleAction, "backward", [current.triangle, current.shape]);
             }
         }
-        currentTriangeId = triple.id;
+        current.triangle = triple.id;
         // ExtendTriangleAction.forward(triple);        
     }
 
@@ -870,28 +871,28 @@ function Action() {
         // console.log(invertedIndex);
         // console.log(triple.id);
         if (shapeId === undefined) {
-            shapeId = uidc.next();
+            shapeId = shapes.nextId();// uidc.next();
             // ASDFASD
             invoker.push(CreateTriangleAction, "forward", [triple.id, shapeId]);
         }
-        uidc.current = shapeId;
+        current.shape = shapeId;
         // console.log("current id = " + currentUID);
-        currentTriangeId = triple.id;
+        current.triangle = triple.id;
     }
 
     function removeTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        if (invertedIndex[currentTriangeId] !== undefined && triple.id !== currentTriangeId) {
+        if (invertedIndex[current.triangle] !== undefined && triple.id !== current.triangle) {
                 // wm("removing at" + triple.id);
-            if (shapes[uidc.current].pts.has(currentTriangeId)) {
+            if (shapes[current.shape].pts.has(current.triangle)) {
                     // wm("deleted at " + triple.id);
                 var action = ExtendTriangleAction;
-                if (shapes[uidc.current].pts.values().length === 1) {
+                if (shapes[current.shape].pts.values().length === 1) {
                     action = CreateTriangleAction;
                 }
-                invoker.push(action, "backward", [currentTriangeId, uidc.current]);
+                invoker.push(action, "backward", [current.triangle, current.shape]);
             }
-            currentTriangeId = triple.id;
+            current.triangle = triple.id;
         }   
         
     }
@@ -900,10 +901,10 @@ function Action() {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         var sid = invertedIndex[triple.id];
         for (var key in shapes) {
-            shapes[key].outline.selected = false;
+            shapes.get(key).outline.selected = false;
         }
         if (sid !== undefined) {
-            shapes[sid].outline.selected = true;
+            shapes.get(sid).outline.selected = true;
         }
     }
 
@@ -1077,7 +1078,7 @@ var action = new Action();
 
 project.activeLayer.transformContent = false;
 
-drawGrid();
+
 var outline = new CompoundPath({
     strokeColor: 'black',
     fillColor: "#cfe",

@@ -3,7 +3,6 @@
 * TODO make Tshape a subclass of Set?
 * TODO move shapes
 * TODO delete shapes
-* TODO choose order of shapes
 * TODO choose colour of shapes
 colours should be kept in another data structure other than the
 shapes array/holder. this is so undo deleting shapes works a bit
@@ -16,6 +15,9 @@ nicer. will work fine as shape id are not reused.
 * TODO continue/merge line in shape
 the straight line of a shape are all little triangle segments
 * TODO make it real
+* DONE choose order of shapes
+CLOSED: [2015-01-26 Mon 17:44]
+using jquery ui
 * DONE select shapes
 CLOSED: [2015-01-26 Mon 12:17]
 
