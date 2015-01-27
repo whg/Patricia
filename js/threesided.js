@@ -474,7 +474,7 @@ function Set() {
     };
     
 
-    this.add = function(e) {s
+    this.add = function(e) {
         if (!this.has(e)) {
             this._values[e] = e;
             return true;
@@ -895,7 +895,7 @@ function Shapes() {
 
         if (arr === undefined) return undefined;
         
-        var maxOrder = 0, highestShape = undefined;
+        var maxOrder = -1, highestShape = undefined;
 
         for (var i = 0; i < arr.length; i++) {
 
@@ -1157,7 +1157,8 @@ function Action() {
     function selectShapes(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         var sid = shapes.highestFromArray(invertedIndex.at(triple.id)); //invertedIndex[triple.id];
-
+        console.log(sid);
+        console.log(triple);
         if (sid === undefined) {
             for (var shape in current.selected._values) {
                 shapes.get(shape).outline.selected = false;

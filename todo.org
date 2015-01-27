@@ -2,8 +2,6 @@
 # * TODO
 * TODO layers
 so you can move shapes off the main grid
-* DONE save and load state
-CLOSED: [2015-01-27 Tue 16:50]
 * TODO choose colour of shapes
 colours should be kept in another data structure other than the
 shapes array/holder. this is so undo deleting shapes works a bit
@@ -11,6 +9,8 @@ nicer. will work fine as shape id are not reused.
 * TODO erase mode
 * TODO better modes for operation
 * TODO merge shapes (into one colour)
+* DONE save and load state
+CLOSED: [2015-01-27 Tue 16:50]
 * DONE continue/merge line in shape
 CLOSED: [2015-01-27 Tue 12:46]
 the straight line of a shape are all little triangle segments
