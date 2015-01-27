@@ -366,13 +366,8 @@ function drawAxes() {
 // drawAxes();
 var axes = getAxes();
 
-function interceptForAxis(axis, number) {
-    if (axis === 'P') {
-        return (number + 1) * 2 - 1;
-    }
-    else if (axis === 'N') {
-        return number * 2 + 1;
-    }
+function yIndexFromSide(size) {
+    return size * 2 + 1;
 }
 
 
@@ -408,16 +403,16 @@ function verticesForTriple(triple) {
     var verts;
     if (direction === 'F') {
         verts = [ 
-            new Index(sides.h, sides.h + interceptForAxis('N', sides.n)),
-            new Index(sides.h+1, interceptForAxis('P', sides.p) - (sides.h+1)),
-            new Index(sides.h, interceptForAxis('P', sides.p) - sides.h)
+            new Index(sides.h, sides.h + yIndexFromSide(sides.n)),
+            new Index(sides.h+1, yIndexFromSide(sides.p) - (sides.h+1)),
+            new Index(sides.h, yIndexFromSide(sides.p) - sides.h)
         ];
     }
     else if (direction == 'B') {
         verts = [
-            new Index(sides.h-1, sides.h - 1 + interceptForAxis('N', sides.n)),
-            new Index(sides.h, interceptForAxis('P', sides.p) - sides.h),
-            new Index(sides.h, sides.h + interceptForAxis('N', sides.n))
+            new Index(sides.h-1, sides.h - 1 + yIndexFromSide(sides.n)),
+            new Index(sides.h, yIndexFromSide(sides.p) - sides.h),
+            new Index(sides.h, sides.h + yIndexFromSide(sides.n))
         ];   
     }
     return verts;
