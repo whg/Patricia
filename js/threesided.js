@@ -1088,7 +1088,7 @@ function Action() {
             current.selected.clear();
         }
         else {
-            if (!modifierStates["shift"]) {
+            if (!modifierStates["shift"] && !current.selected.has(sid)) {
                 for (var shape in current.selected._values) {
                     shapes.get(shape).outline.selected = false;
                 }

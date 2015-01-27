@@ -9,7 +9,8 @@ nicer. will work fine as shape id are not reused.
 * TODO erase mode
 * TODO better modes for operation
 * TODO merge shapes (into one colour)
-* TODO continue/merge line in shape
+* DONE continue/merge line in shape
+CLOSED: [2015-01-27 Tue 12:46]
 the straight line of a shape are all little triangle segments
 * DONE move shapes
 CLOSED: [2015-01-26 Mon 23:01]
