@@ -41,3 +41,8 @@ body {
     cursor: -moz-grabbing;
     cursor: -webkit-grabbing;
 }
+
+input[type="file"] {
+
+    /* opacity: 0; */
+}

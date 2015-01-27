@@ -14,10 +14,27 @@ Index.prototype.toString = function() {
     return this.x + "," + this.y;
 }
 
-function Triple(n, p, h) {
-    this.n = n;
-    this.p = p;
-    this.h = h;
+function Triple(nOrTripleOrData, p, h) {
+
+    if (p !== undefined && h !== undefined){
+        this.n = nOrTripleOrData;
+        this.p = p;
+        this.h = h;
+    }
+    else if (nOrTripleOrData.n !== undefined) {
+        this.n = nOrTripleOrData.n;
+        this.p = nOrTripleOrData.p;
+        this.h = nOrTripleOrData.h;
+    }
+    else if (nOrTripleOrData.charAt !== undefined){
+        var parts = nOrTripleOrData.split(",");
+        this.n = parseInt(parts[0]);
+        this.p = parseInt(parts[1]);
+        this.h = parseInt(parts[2]);
+    }
+    else {
+        throw "Unable to construct Triple with " + nOrTripleData + " as first arg";
+    }
 
     this.clone = function() {
         return new Triple(this.n, this.p, this.h);
@@ -457,7 +474,7 @@ function Set() {
     };
     
 
-    this.add = function(e) {
+    this.add = function(e) {s
         if (!this.has(e)) {
             this._values[e] = e;
             return true;
@@ -500,15 +517,16 @@ function SetWithUniverse(universe) {
     // default universe is the database
     extend(this, new Set());
 
-    this._universe = universe;
+    // this._universe = universe;
 
-    if (universe === undefined) {
-        this._universe = createDatabase();
-    }
+    // if (universe === undefined) {
+    //     this._universe = db; //createDatabase();
+    // }
 
 
     this.exists = function(e) {
-        return this._universe[e] !== undefined;
+        // return this._universe[e] !== undefined;
+        return db[e] !== undefined;
     }
 
     this.add = function(e) {
@@ -551,9 +569,9 @@ function triplesForDimension(size) {
 function createTriangle(triple, vertices) {
     var dir = triangleDirection(triple);
     return {
-        'id': triple.id,
-        'vertices': vertices,
-        'edges': [
+        "id": triple.id,
+        "vertices": vertices,
+        "edges": [
             new Edge(vertices[0], vertices[1], dir == 'F' ? 'N' : 'P'),
             new Edge(vertices[1], vertices[2], dir == 'F' ? 'P' : 'H'),
             new Edge(vertices[2], vertices[0], dir == 'F' ? 'H' : 'N'),
@@ -724,21 +742,30 @@ function mergeLines(perims) {
 }
 
 
-function TShape(id) {
+function TShape(idOrData, order) {
 
     extend(this, new SetWithUniverse());
+
+    if (idOrData.triples === undefined) {
+        this.id = idOrData;
+        this.order = order; //Object.keys(shapes).length;
+    }
+    else {
+        this.id = idOrData.id;
+        this.order = idOrData.order;
+        var triples = idOrData.triples;
+        for (var i = 0, l = triples.length; i < l; i++) {
+            this.add(new Triple(triples[i]));
+        }
+        this._values
+    }
     
-    // this.pts = new Set();
-    this.id = id;
-    this.order = Object.keys(shapes).length;
     this.outline = new CompoundPath({
         strokeColor: 'black',
-        fillColor: new Color(1.0, id/2.0, 1.0), //"#cfe",
-        // closed: true,
     });
 
     this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random(), 0.4);
-    this.outline.id = id;
+
     this.draw = function() {
         var outerEdges = getPerimeterEdges(this);
         var perim = pathFromPerimeterEdges(outerEdges);
@@ -750,10 +777,20 @@ function TShape(id) {
         var perim = pathFromPerimeterEdges(outerEdges);
         perim = mergeLines(perim);
         makeOutline(perim, this.outline);  
-    }
+    };
+
+    this.data = function() {
+        return {
+            "triples": Object.keys(this._values),
+            "id": this.id,
+            "order": this.order,
+        };
+    };
+
     
     return this;
 }
+
 
 
 
@@ -779,6 +816,12 @@ function InvertedIndex() {
             if (index[tripleId].length === 0) {
                 delete index[tripleId];
             }
+        }
+    };
+
+    this.addShape = function(shape) {
+        for (var tripleId in shape._values) {
+            this.add(tripleId, shape.id);
         }
     };
 
@@ -818,7 +861,7 @@ function Shapes() {
     };
 
     this.add = function(key) {
-        shapes[key] = new TShape(key);
+        shapes[key] = new TShape(key, Object.keys(shapes).length);
         // shapes[key].outline.setLayer(layer);
     };
 
@@ -840,6 +883,14 @@ function Shapes() {
         });
     };
 
+    this.shapeIds = function() {
+        var ret = {};
+        for (var id in shapes) {
+            ret[id] = id;
+        }
+        return ret;
+    };
+
     this.highestFromArray = function(arr) {
 
         if (arr === undefined) return undefined;
@@ -855,7 +906,34 @@ function Shapes() {
             }
         }
         return highestShape;
+    };
+
+    this.getState = function() {
+       var data = {};
+        for (var shapeId in shapes) {
+            data[shapeId] = shapes[shapeId].data();
+        }
+        return data;
+        
+    };
+
+    function clear() {
+        for (var key in shapes) {
+            delete shapes[key];
+        }
+        shapes = {};
     }
+    
+    this.loadState = function(obj) {
+
+        clear();
+
+        for (var shapeId in obj) {
+            shapes[shapeId] = new TShape(obj[shapeId]);
+            shapes[shapeId].draw();
+        }
+    };
+    
     
     return this;
 }
@@ -881,8 +959,8 @@ function UI() {
     });
   
     
-    this.updateShapes = function() {
-        var ids = shapes.keysInOrder(shapes);
+    this.updateShapes = function(shapes) {
+        var ids = shapes.keysInOrder();
         $("#shapes").html("");
         for (var i = 0, shape = null; i < ids.length; i++) {
             shape = shapes.get(ids[i]);
@@ -976,7 +1054,7 @@ function Action() {
             ExtendShapeAction.forward(triple, shapeId);
 
             //update UI
-            ui.updateShapes();
+            ui.updateShapes(shapes);
 
             return "Create";
         },
@@ -1414,3 +1492,53 @@ function wm(m) {
     }
 }
 
+
+
+$("#download").click(function(e) {
+
+    var data = shapes.getState();
+    
+    var anchor = $(this);
+    var req = $.ajax({
+        url: "save.php",
+        async: false,
+        type: "POST",
+        data: { "data": JSON.stringify(data) },
+    }).done(function(filepath) {
+
+        anchor.attr("href", filepath);
+        var parts = filepath.split("/");
+        anchor.attr("download", parts[parts.length-1]);
+
+    });
+
+});
+
+
+$("#upload").click(function(e){
+
+    e.preventDefault();
+   $("#fileupload").trigger('click');
+});
+
+function loadState(obj) {
+    console.log("loading");
+    console.log(obj);
+
+    shapes.loadState(JSON.parse(obj));
+    for (var shapeId in shapes.shapeIds()) {
+        invertedIndex.addShape(shapes.get(shapeId));
+    }
+    ui.updateShapes(shapes);
+}
+
+$("input:file").change(function (){
+
+    var file = $(this).prop("files")[0];
+    var fileReader = new FileReader();
+    fileReader.onload = function(event) {
+        loadState(event.target.result);
+    };
+
+    fileReader.readAsText(file);
+});
