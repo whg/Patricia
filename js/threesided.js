@@ -4,14 +4,10 @@ paper.setup(document.getElementById("canvas"));
 
 var sqrt3 = Math.sqrt(3);
 
-var side = 50;
-var alt = sqrt3 * side * 0.5;
 
+var nx = 0, ny = 0, side = 0, alt = 0;
+var boundsSize = new Size(1000, 700);
 
-var nx = 29;
-var ny = 48;
-
-var boundsSize = new Size(nx*alt, ny*side);
 
 var Index = Point;
 Index.prototype.toString = function() {
@@ -67,8 +63,7 @@ function Triple(n, p, h) {
 
 function sorted(a) { 
     var b = a.slice(0); 
-    b.sort(); 
-    return b; 
+    return b.sort(); 
 }
 
 function extend(subclass, superclass) {
@@ -279,7 +274,7 @@ function nextLine(line, type, size) {
     return line;
 }
 
-function drawGridLines(type, size) {
+function drawGridLines(type, size, group) {
     var n = numLines(type, size);
     var line = firstLine(type, size);
 
@@ -291,15 +286,17 @@ function drawGridLines(type, size) {
             strokeScaling: false,
         });
         line = nextLine(line, type, size);
+        group.addChild(p);
     }
 }
 
-function drawGrid() {
-    drawGridLines('N', new Index(nx, ny));
-    drawGridLines('P', new Index(nx, ny));
-    drawGridLines('H', new Index(nx, ny));
+function drawGrid(group) {
+    group.removeChildren();
+    drawGridLines('N', new Index(nx, ny), group);
+    drawGridLines('P', new Index(nx, ny), group);
+    drawGridLines('H', new Index(nx, ny), group);
+    return group;
 }
-drawGrid();
 
 function _project(point, line) {
     /// use dot product to project a point on to a line
@@ -564,8 +561,11 @@ function createTriangle(tid, vertices) {
 }
 
 function createDatabase(size) {
+    if (size === undefined) {
+        size = new Size(nx, ny);
+    }
     var db = {};
-    var triples = triplesForDimension(new Size(nx, ny));
+    var triples = triplesForDimension(size);
     for(var i = 0; i < triples.length; i++) {
         var verts = verticesForTriple(triples[i]);
         db[triples[i].id] = createTriangle(triples[i].id, verts);
@@ -574,9 +574,13 @@ function createDatabase(size) {
     return db;
 }
 
-var db = createDatabase(); 
 // console.log(Object.keys(db));
-var pts = {}; //= new Set(Object.keys(db));
+// var pts = {}; //= new Set(Object.keys(db));
+
+function isValidTriple(triple) {
+    return db[triple.id] !== undefined;
+}
+
 
 function getPerimeterEdges(pntSet) {
     var outerEdges = {};
@@ -767,8 +771,6 @@ function InvertedIndex() {
     };
 }
 
-var invertedIndex = new InvertedIndex;
-
 
 function Shapes() {
 
@@ -796,6 +798,11 @@ function Shapes() {
 
     };
 
+    this.draw = function() {
+        for (var key in shapes) {
+            shapes[key].draw();
+        }
+    }
 
     this.keysInOrder = function() {
         return Object.keys(shapes).sort(function(a,b){
@@ -822,7 +829,7 @@ function Shapes() {
     
     return this;
 }
-var shapes = new Shapes();
+
 
 
 function UI() {
@@ -855,10 +862,7 @@ function UI() {
 
     return this;
 }
-var ui = new UI();
-// var shapes = {};
-// var currentTriangeId = null;
-var current = { triple: null, shape: null, selected: new Set() };
+
 
 function Command(action, direction, args) {
     this.action = action;
@@ -881,7 +885,7 @@ function Command(action, direction, args) {
         }
 
         var name = this.action[dir].apply(this.action, this.args);
-        console.log("executed " + name + " with " + JSON.stringify(this.args));
+        console.log("executed " + name + " with " + this.args);
     };
 
     return this;
@@ -987,7 +991,10 @@ function Action() {
     
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-
+        if (!isValidTriple(triple)) {
+            return;
+        }
+        
         if (!shapes.get(current.shape).has(triple)) {
             invoker.push(ExtendShapeAction, "forward", [triple, current.shape]);
         }
@@ -1003,6 +1010,9 @@ function Action() {
     function findShape(event) {
         // console.log(invertedIndex);
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        if (!isValidTriple(triple)) {
+            return;
+        }
         current.triple = triple;
         current.shape = shapes.highestFromArray(invertedIndex.at(current.triple.id));
          // current.triple = triple.id;
@@ -1040,8 +1050,6 @@ function Action() {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         var sid = shapes.highestFromArray(invertedIndex.at(triple.id)); //invertedIndex[triple.id];
 
-        console.log(modifierStates["shift"] + " " + sid);
-
         if (sid === undefined) {
             for (var shape in current.selected._values) {
                 shapes.get(shape).outline.selected = false;
@@ -1049,10 +1057,6 @@ function Action() {
 
             current.selected.clear();
         }
-        // else if (!modifierStates["shift"]) {
-            
-        // }
-        // else if ()
         else {
             if (!modifierStates["shift"]) {
                 for (var shape in current.selected._values) {
@@ -1061,17 +1065,12 @@ function Action() {
                 
                 current.selected.clear();
             }
-            // console.log("sele");
             
             current.selected.add(sid);
             shapes.get(sid).outline.selected = true;
 
             current.triple = triple;
         }
-        // console.log(current.selected._values);
-        // for (var shape in current.selected._values) {
-        //     shapes.get(shape).outline.selected = true;
-        // }
         
     }
 
@@ -1094,7 +1093,7 @@ function Action() {
                 shape.draw();
             }
 
-            return "Move " + moveTriple;
+            return "Move";
         },
         "backward": function(shapeIds, moveTriple){
             console.log("adfsasdfkljasd " + moveTriple);
@@ -1105,26 +1104,11 @@ function Action() {
 
     function moveShapes(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        
         if (triple.id !== current.triple.id && triangleDirection(triple) === triangleDirection(current.triple)) {
             var moveTriple = triple.subtract(current.triple);
+
             invoker.push(MoveShapeAction, "forward", [current.selected.values(), moveTriple]);
-
-                        // var shape, items, triple;
-
-            // console.log(difftriple);
-            // for (var shapeId in current.selected._values) {
-            //     shape = shapes.get(shapeId);
-            //     items = shape.items();
-            //     invertedIndex.removeShape(shape);
-            //     shape.clear();
-            //     for (var key in items) {
-            //         triple = items[key].add(difftriple);
-            //         shape.add(triple);
-            //         invertedIndex.add(triple.id, shape.id);
-
-            //     }
-            //     shape.draw();
-            // }
 
             current.triple = triple;
         }
@@ -1232,7 +1216,7 @@ function Action() {
 
         var ret = true;
 
-        // console.log(event);
+        console.log(event);
         // modifiers are treated seperately because they
         // don't repeat the call to onKeyDown
         if (event.key in modifierStates) {
@@ -1300,7 +1284,7 @@ function Action() {
     });
 
 }
-var action = new Action();
+
 
 project.activeLayer.transformContent = false;
 
@@ -1327,8 +1311,49 @@ var outline = new CompoundPath({
 //     var sq = new Path.Circle(pointAtIndex(new Index(i, ny)).add(os), 2.5);
 //     sq.fillColor = "#bbb";
 // }
+var rect = new Path.Rectangle(new Point(0, 0), boundsSize);
+rect.strokeColor = '#eee';
+
+
+function setTriangleSize(s) {
+    side = s;
+    alt = sqrt3 * side * 0.5;
+    nx = Math.floor(boundsSize.width / alt) + 1;
+    ny = Math.floor(boundsSize.height / side * 2) + 1;
+
+    gridGroup = drawGrid(gridGroup);
+
+    db = createDatabase(new Size(nx, ny)); 
+    
+    // for (var shapeId in shapes._values) {
+    //     debugger;
+    //     shapes.get(shapeId).draw();
+    // }
+
+    shapes.draw();
+
+    project.view.draw();
+}
+
+
+
+
+var gridGroup = new Group();
+// gridGroup = drawGrid(gridGroup);
+
+var action = new Action();
+var db = {}; //createDatabase(new Size(nx, ny)); 
+var invertedIndex = new InvertedIndex;
+var shapes = new Shapes();
+var ui = new UI();
+var current = { triple: null, shape: null, selected: new Set() };
+
+setTriangleSize(60);
 
 view.draw();
+
+
+
 // };
 
 

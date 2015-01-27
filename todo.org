@@ -1,9 +1,5 @@
 
 # * TODO
-* DONE move shapes
-CLOSED: [2015-01-26 Mon 23:01]
-done with undo
-* TODO delete shapes
 * TODO choose colour of shapes
 colours should be kept in another data structure other than the
 shapes array/holder. this is so undo deleting shapes works a bit
@@ -13,7 +9,12 @@ nicer. will work fine as shape id are not reused.
 * TODO merge shapes (into one colour)
 * TODO continue/merge line in shape
 the straight line of a shape are all little triangle segments
-* TODO make it real
+* DONE move shapes
+CLOSED: [2015-01-26 Mon 23:01]
+done with undo
+* DONE make it real
+CLOSED: [2015-01-27 Tue 00:52]
+change the size of the triangles
 * DONE make Tshape a subclass of Set?
 CLOSED: [2015-01-26 Mon 19:14]
 
