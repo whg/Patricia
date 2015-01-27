@@ -85,14 +85,19 @@ function mergeObjects() {
     return r;
 }
 
-function Edge(start, end) {
+function Edge(start, end, type) {
     this.start = start;
     this.end = end;
-
+    this.type = type;
+    
     //create an id where the start and the end doesn't matter
     this.getId = function () {
         var id = this.start.id + "-" + this.end.id;
         return sorted(id.split('-')).join('-');
+    }
+
+    this.clone = function() {
+        return new Edge(this.start, this.end, this.type);
     }
 
     this.toString = function() {
@@ -543,27 +548,31 @@ function triplesForDimension(size) {
     return ret;
 }
 
-function createTriangle(tid, vertices) {
+function createTriangle(triple, vertices) {
+    var dir = triangleDirection(triple);
     return {
-        'id': tid,
+        'id': triple.id,
         'vertices': vertices,
         'edges': [
-            new Edge(vertices[0], vertices[1]),
-            new Edge(vertices[1], vertices[2]),
-            new Edge(vertices[2], vertices[0]),
+            new Edge(vertices[0], vertices[1], dir == 'F' ? 'N' : 'P'),
+            new Edge(vertices[1], vertices[2], dir == 'F' ? 'P' : 'H'),
+            new Edge(vertices[2], vertices[0], dir == 'F' ? 'H' : 'N'),
         ],
     }
 }
 
 function createDatabase(size) {
+
     if (size === undefined) {
         size = new Size(nx, ny);
     }
+    
     var db = {};
     var triples = triplesForDimension(size);
+    
     for(var i = 0; i < triples.length; i++) {
         var verts = verticesForTriple(triples[i]);
-        db[triples[i].id] = createTriangle(triples[i].id, verts);
+        db[triples[i].id] = createTriangle(triples[i], verts);
 
     }
     return db;
@@ -691,7 +700,28 @@ function makeOutline(perims, outline) {
     }
 }
 
-
+function mergeLines(perims) {
+    for (var i = 0; i < perims.length; i++) {
+        var perim = perims[i];
+        var edge = perim[0].clone();
+        var edges = [];
+        for (var j = 1; j < perim.length; j++) {
+            if (perim[j].type === perim[j-1].type) {
+                // edgesToRemove.push(j);
+                // edges.push(perim[j-1]);
+                edge.end = perim[j].end;
+            }
+            else {
+                edges.push(edge);
+                edge = perim[j].clone();
+            }
+        }
+        edges.push(edge);
+        console.log(edges);
+        perims[i] = edges;
+    }
+    return perims;
+}
 
 
 function TShape(id) {
@@ -715,7 +745,12 @@ function TShape(id) {
         makeOutline(perim, this.outline);  
     };   
 
-
+    this.mergeLines = function() {
+        var outerEdges = getPerimeterEdges(this);
+        var perim = pathFromPerimeterEdges(outerEdges);
+        perim = mergeLines(perim);
+        makeOutline(perim, this.outline);  
+    }
     
     return this;
 }
