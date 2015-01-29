@@ -714,36 +714,14 @@ function pathFromPerimeterEdges(edges) {
             var id = index.id;
             
             if (this.data[id] !== undefined) {
-
-                // var randIndex = Math.floor(Math.random() * this.data[id].length);
                 
                 var branch = 0;
                 
                 if (this.branches[id] !== undefined) {
                     branch = this.branches[id].splice(0, 1);
-                    console.log("branching on " + id + " to " + branch);
-                    // branches[id].splice(0, 1);
-                    // if (branches[id].length === 0) {
-                    //     delete branches[id];
-                    // }
                 }
-                // else if (this.data[id].length > 1) {
-                //     // console.log(this.data[id]);
-                //     // debugger;
-                //     // console.log(randIndex);
-                //     function range(from, to) {
-                //         var ret = [];
-                //         for (var i = from; i < to; i++) {
-                //             ret.push(i);
-                //         }
-                //         return ret;
-                //     }
-                    
-                //     branches[id] = range(1, this.data[id].length);
-                // }
-                
+
                 var r = this.data[id].splice(branch, 1);
-                // return this.data[id][branch];
 
                 if (r.length > 0) {
                     ret = r[0];
@@ -762,12 +740,15 @@ function pathFromPerimeterEdges(edges) {
         starts.pushEdge(e);
     }
 
-    console.log(starts);
+    // console.log(starts);
     var branches = {};    
     for (var key in starts.data) {
-        if (starts.data[key].length > 1) {
+        if (starts.data[key].length == 2) {
             // console.log(key + " has " + starts.data[key]);
             branches[key] = [[0, 0], [1, 0]]; //range(0, starts.data[key].length);
+        }
+        else if (starts.data[key].length === 3) {
+            branches[key] = [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0], [2, 0, 0], [2, 1, 0]];
         }
     }
     var branchIndices = Object.keys(branches);
@@ -776,8 +757,8 @@ function pathFromPerimeterEdges(edges) {
         branchRoutes.push(branches[branchIndices[i]]);
     }
 
-    console.log(branchIndices);
-    console.log(JSON.stringify(branchRoutes));
+    // console.log(branchIndices);
+    // console.log(JSON.stringify(branchRoutes));
     // console.log(JSON.stringify(cartesianProductOf.apply(null, branchRoutes)));
 
     var routesProduct = cartesianProductOf.apply(undefined, branchRoutes);
@@ -788,24 +769,24 @@ function pathFromPerimeterEdges(edges) {
         }
         return ret;
     });
-    console.log(JSON.stringify(routesMap))
+    // console.log(JSON.stringify(routesMap))
 
     function getPerim(starts) {
-        console.log("getPerim with branches " + JSON.stringify(starts.branches));// + " and " + JSON.stringify(starts.data));
+        // console.log("getPerim with branches " + JSON.stringify(starts.branches));// + " and " + JSON.stringify(starts.data));
         var q = 0, qq = 0, l = Object.keys(starts.data).length;
         // console.log("l = " + l);
         var perims = [];
         do {
             var sortedStarts = sorted(Object.keys(starts.data));
             if (/*qq >= (l-1) || */sortedStarts.length === 0) {
-                console.log("breaking, qq = " + qq);
+                // console.log("breaking, qq = " + qq);
                 break;
             }
 
             var firstEdge = starts.data[sortedStarts[0]][0];
             var perim = [starts.popIndex(firstEdge.start)];
             var prevEdge, nextEdge;
-            console.log("firstEdge = " + firstEdge);
+            // console.log("firstEdge = " + firstEdge);
             do {
                 prevEdge = perim[perim.length-1];
                 nextEdge = starts.popIndex(prevEdge.end);
@@ -823,24 +804,40 @@ function pathFromPerimeterEdges(edges) {
 
     if (branchRoutes.length === 0) {
         var r = getPerim(starts);
-        console.log("with one, perims.length = " + r.length);
+        // console.log("with one, perims.length = " + r.length);
         return r;
     }
 
-    var outlines = routesMap.map(function(branches) {
+    var outlines = [];
+    for (var i = 0; i < routesMap.length; i++) {
         var startsWithBranches = starts.clone();
         // console.log(starts.data);
         // console.log(startsWithBranches.data);
-        startsWithBranches.branches = branches;
-        return getPerim(startsWithBranches);
-    });
+        startsWithBranches.branches = routesMap[i]; //branches;
+        
+        var outline = getPerim(startsWithBranches);
+        if (outline.length === 1) {
+            // console.log("early exiting with " + outline);
+            return outline;
+        }
+        outlines.push(outline);
+    }
+    
+    // var outlines = routesMap.map(function(branches) {
+    //     var startsWithBranches = starts.clone();
+    //     // console.log(starts.data);
+    //     // console.log(startsWithBranches.data);
+    //     startsWithBranches.branches = branches;
+    //     return getPerim(startsWithBranches);
+    // });
 
-    console.log(outlines);
+
     var mol = 1000, minOutline = undefined;
     
     outlines.forEach(function(outline) {
         console.log("length  = " + outline.length + ", outline lengths = " + outline.map(function(e) { return e.length; }));
         if (outline.length < mol) {
+            
             minOutline = outline;
             mol = outline.length;
         }
@@ -919,7 +916,11 @@ function TShape(idOrData, order) {
 
     this.draw = function() {
         var outerEdges = getPerimeterEdges(this);
+
+        var start = performance.now();
         var perim = pathFromPerimeterEdges(outerEdges);
+        console.log("pathFromPerimeterEdges took " + (performance.now() - start) + "");
+        
         makeOutline(perim, this.outline);  
     };   
 
