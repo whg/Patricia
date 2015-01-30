@@ -726,16 +726,16 @@ function pathFromPerimeterEdges(edges, getMin) {
                     // branch = this.branches[id];
                 }
 
-                this.counter++;
-                return this.data[id][branch];
-                // var r = this.data[id].splice(branch, 1);
+                // this.counter++;
+                // return this.data[id][branch];
+                var r = this.data[id].splice(branch, 1);
 
-                // if (r.length > 0) {
-                //     ret = r[0];
-                // }
-                // if (this.data[id].length === 0){
-                //     delete this.data[id];
-                // }
+                if (r.length > 0) {
+                    ret = r[0];
+                }
+                if (this.data[id].length === 0){
+                    delete this.data[id];
+                }
 
             }
             return ret;
@@ -754,12 +754,12 @@ function pathFromPerimeterEdges(edges, getMin) {
     for (var key in starts.data) {
         if (starts.data[key].length == 2) {
             // console.log(key + " has " + starts.data[key]);
-            branches[key] = [[0, 1], [1, 0]]; //range(0, starts.data[key].length);
-            // branches[key] = [[0, 1], [1, 0]];
+            // branches[key] = [[0, 1], [1, 0]]; //range(0, starts.data[key].length);
+            branches[key] = [[0, 0], [1, 0]];
         }
         else if (starts.data[key].length === 3) {
-            // branches[key] = [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0], [2, 0, 0], [2, 1, 0]];
-            branches[key] = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+            branches[key] = [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0], [2, 0, 0], [2, 1, 0]];
+            // branches[key] = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
         }
     }
     var branchIndices = Object.keys(branches);
@@ -768,7 +768,7 @@ function pathFromPerimeterEdges(edges, getMin) {
         branchRoutes.push(branches[branchIndices[i]]);
     }
 
-    console.log("num branches = " + Object.keys(branches).length);
+    // console.log(branchIndices);
     // console.log(JSON.stringify(branchRoutes));
     // console.log(JSON.stringify(cartesianProductOf.apply(null, branchRoutes)));
 
@@ -789,8 +789,8 @@ function pathFromPerimeterEdges(edges, getMin) {
         var perims = [];
         do {
             var sortedStarts = sorted(Object.keys(starts.data));
-            // if (sortedStarts.length === 0) {
-            if (starts.counter >= l) {
+            if (sortedStarts.length === 0) {
+            // if (starts.counter >= l) {
                 break;
             }
             // console.log("contour " + q);
@@ -843,7 +843,7 @@ function pathFromPerimeterEdges(edges, getMin) {
         if (outline.length === undefined) continue;
         if (outline.length === 1) {
             console.log("early exiting with length" + outline.length + ", i = " + i + " of " + routesMap.length);
-            console.log(routesMap);
+            // console.log(routesMap);
             return outline;
         }
         outlines.push(outline);
@@ -869,7 +869,7 @@ function pathFromPerimeterEdges(edges, getMin) {
         }
     });
     // console.log("with multiple, perims.length = " + minOutline.length);
-    // console.log("we have " + perims.length + " outlines");
+    console.log("we have " + perims.length + " outlines");
     return minOutline;
 }
 
@@ -1662,6 +1662,8 @@ so many amazing things about paper.js
 strokescaling = false, was a life saver!
 .transformContent = false took me ages to figure out!
 compoundPath is a joy to work with
+
+it's 30% slower to do the constant slicing on getPerimiter, but it can haldle holes a lot nicer
 */
 
 function wm(m) {
