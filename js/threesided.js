@@ -6,7 +6,7 @@ var sqrt3 = Math.sqrt(3);
 
 
 var nx = 0, ny = 0, side = 0, alt = 0;
-var boundsSize = new Size(1000, 700);
+var boundsSize = new Size(1520, 1032);
 
 
 var Index = Point;
@@ -304,7 +304,7 @@ function drawGridLines(type, size, group) {
         var p = new Path.Line({
             from: pointAtGridIndex(line.start),
             to: pointAtGridIndex(line.end),
-            strokeColor: '#aaa',
+            strokeColor: '#eee',
             strokeScaling: false,
         });
         line = nextLine(line, type, size);
@@ -723,11 +723,8 @@ function pathFromPerimeterEdges(edges, getMin) {
                     if (this.branches[id].length === 0){
                         delete this.branches[id];
                     }
-                    // branch = this.branches[id];
                 }
 
-                // this.counter++;
-                // return this.data[id][branch];
                 var r = this.data[id].splice(branch, 1);
 
                 if (r.length > 0) {
@@ -746,72 +743,41 @@ function pathFromPerimeterEdges(edges, getMin) {
     for (var key in edges) {
         var e = edges[key];
         starts.pushEdge(e);
-        // console.log(edges[key].start + " -> " + edges[key].end);
     }
 
-    // console.log(starts);
     var branches = {};    
     for (var key in starts.data) {
         if (starts.data[key].length == 2) {
-            // console.log(key + " has " + starts.data[key]);
-            // branches[key] = [[0, 1], [1, 0]]; //range(0, starts.data[key].length);
             branches[key] = [[0, 0], [1, 0]];
         }
         else if (starts.data[key].length === 3) {
             branches[key] = [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0], [2, 0, 0], [2, 1, 0]];
-            // branches[key] = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
         }
     }
-    var branchIndices = Object.keys(branches);
-    var branchRoutes = [];
-    for (var i = 0; i < branchIndices.length; i++) {
-        branchRoutes.push(branches[branchIndices[i]]);
-    }
-
-    // console.log(branchIndices);
-    // console.log(JSON.stringify(branchRoutes));
-    // console.log(JSON.stringify(cartesianProductOf.apply(null, branchRoutes)));
-
-    var routesProduct = cartesianProductOf.apply(undefined, branchRoutes);
-    var routesMap = routesProduct.map(function(e) {
-        var ret = {};
-        for (var i = 0; i < e.length; i++) {
-            ret[branchIndices[i]] = e[i].slice();
-        }
-        return ret;
-    });
-    // console.log(JSON.stringify(routesMap))
-
+    
+    
     function getPerim(starts) {
-        // console.log("getPerim with branches " + JSON.stringify(starts.branches));// + " and " + JSON.stringify(starts.data));
+    
         var q = 0, qq = 0, l = Object.keys(edges).length;
-        // console.log("l = " + l);
+    
         var perims = [];
         do {
             var sortedStarts = sorted(Object.keys(starts.data));
             if (sortedStarts.length === 0) {
-            // if (starts.counter >= l) {
                 break;
             }
-            // console.log("contour " + q);
-
+            
             var firstEdge = starts.data[sortedStarts[0]][0];
 
             var nextEdge;
             var prevEdge = starts.popIndex(firstEdge.start)
             var perim = [prevEdge];
             do {
-                // prevEdge = perim[perim.length-1];
+            
                 nextEdge = starts.popIndex(prevEdge.end);
-                // console.log(nextEdge.id);
-                // console.log(prevEdge.start + " -> " + prevEdge.end);
                 perim.push(nextEdge);
                 prevEdge = nextEdge;
-                if (starts.counter > l+1) {
-                    // console.log("returning, counter = " + starts.counter);
-                    return false;
-                }
-                // qq++;
+            
             } while (nextEdge.end.id !== firstEdge.start.id);
 
             perims.push(perim);
@@ -821,42 +787,40 @@ function pathFromPerimeterEdges(edges, getMin) {
         return perims;
     }
 
-    if (branchRoutes.length === 0 /*|| !getMin*/) {
+    if (Object.keys(branches).length === 0 || !getMin) {
         var r = getPerim(starts);
-        // console.log("with one, perims.length = " + r.length);
         return r;
     }
 
-    // if (!getMin) {
-        
-    // }
+    var branchIndices = Object.keys(branches);
+    var branchRoutes = [];
+    for (var i = 0; i < branchIndices.length; i++) {
+        branchRoutes.push(branches[branchIndices[i]]);
+    }
+
+    var routesProduct = cartesianProductOf.apply(undefined, branchRoutes);
+    var routesMap = routesProduct.map(function(e) {
+        var ret = {};
+        for (var i = 0; i < e.length; i++) {
+            ret[branchIndices[i]] = e[i].slice();
+        }
+        return ret;
+    });
+
     
     var outlines = [];
     for (var i = 0; i < routesMap.length; i++) {
         var startsWithBranches = starts.clone();
-        // console.log(starts.data);
-        // console.log(startsWithBranches.data);
-        startsWithBranches.branches = routesMap[i]; //branches;
+        startsWithBranches.branches = routesMap[i];
         
         var outline = getPerim(startsWithBranches);
-        // console.log("outline = " + outline);
+
         if (outline.length === undefined) continue;
         if (outline.length === 1) {
-            console.log("early exiting with length" + outline.length + ", i = " + i + " of " + routesMap.length);
-            // console.log(routesMap);
             return outline;
         }
         outlines.push(outline);
     }
-    
-    // var outlines = routesMap.map(function(branches) {
-    //     var startsWithBranches = starts.clone();
-    //     // console.log(starts.data);
-    //     // console.log(startsWithBranches.data);
-    //     startsWithBranches.branches = branches;
-    //     return getPerim(startsWithBranches);
-    // });
-
 
     var mol = 1000, minOutline = undefined;
     
@@ -869,7 +833,7 @@ function pathFromPerimeterEdges(edges, getMin) {
         }
     });
     // console.log("with multiple, perims.length = " + minOutline.length);
-    console.log("we have " + perims.length + " outlines");
+    // console.log("we have " + perims.length + " outlines");
     return minOutline;
 }
 
@@ -891,6 +855,7 @@ function makeOutline(perims, outline) {
 
     }
 }
+
 
 function mergeLines(perims) {
     for (var i = 0; i < perims.length; i++) {
@@ -938,21 +903,21 @@ function TShape(idOrData, order) {
         strokeColor: 'black',
     });
 
-    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random(), 0.4);
+    // this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random(), 0.4);
 
-    this.draw = function() {
+    this.draw = function(getMinOutline) {
         var outerEdges = getPerimeterEdges(this);
 
         var start = performance.now();
-        var perim = pathFromPerimeterEdges(outerEdges);
+        var perim = pathFromPerimeterEdges(outerEdges, getMinOutline);
         console.log("pathFromPerimeterEdges took " + (performance.now() - start) + "");
         
         makeOutline(perim, this.outline);  
     };   
 
-    this.mergeLines = function() {
+    this.mergeLines = function(getMinOutline) {
         var outerEdges = getPerimeterEdges(this);
-        var perim = pathFromPerimeterEdges(outerEdges);
+        var perim = pathFromPerimeterEdges(outerEdges, getMinOutline);
         perim = mergeLines(perim);
         makeOutline(perim, this.outline);  
     };
@@ -965,6 +930,13 @@ function TShape(idOrData, order) {
         };
     };
 
+    // this.plot = function() {
+    //     this.perims = pathFromPerimeterEdges(getPerimeterEdges(this));
+    //     var outerEdges = getPerimeterEdges(this);
+    //     var perim = pathFromPerimeterEdges(outerEdges);
+    //     perim = mergeLines(perim);
+    //     makeOutline(perim, this.outline);
+    // };
     
     return this;
 }
@@ -1112,6 +1084,31 @@ function Shapes() {
         }
     };
     
+    this.plot = function() {
+      console.log(this);
+        var paths = [];
+        for (var shapeId in shapes) {
+            var shape = shapes[shapeId];
+            shape.mergeLines(true);
+            var lines = shape.outline.children;
+            for (var i = 0; i < lines.length; i++) {
+                paths.push(lines[i].segments);
+            }
+        }
+
+        var req = $.ajax({
+            url: "save.php",
+            type: "POST",
+            data: {
+                "data": JSON.stringify(paths),
+                "folder": "plots",
+            },
+        }).done(function(filepath) {
+
+            console.log("sent file to plot");
+        });
+
+    };
     
     return this;
 }
@@ -1477,8 +1474,8 @@ function Action() {
             return sorted(keys).join("+");
         }
 
-        this.add = function(keys, func) {
-            combos[makeKeyComboId(keys)] = func;
+        this.add = function(keys, obj, func) {
+            combos[makeKeyComboId(keys)] = function() { obj[func].apply(obj); };
         }
 
         this.call = function(event) {
@@ -1494,10 +1491,10 @@ function Action() {
     }
 
     var keyHandler = new KeyComboHandler();
-    keyHandler.add(["command", "shift", "z"], invoker.redo); //function() { invoker.redo(); });
+    keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invoker.redo(); });
     // keyHandler.add(["q", "shift"], function() { console.log("BIG QQQ!")});
-    keyHandler.add(["command", "z"], invoker.undo); //function() { invoker.undo(); });
-    
+    keyHandler.add(["command", "z"], invoker, "undo"); //function() { invoker.undo(); });
+    keyHandler.add(["command", "p"], shapes, "plot");
 
     tool.onKeyDown = function onKeyDown(event) {
 
@@ -1599,7 +1596,7 @@ var outline = new CompoundPath({
 //     sq.fillColor = "#bbb";
 // }
 var rect = new Path.Rectangle(new Point(0, 0), boundsSize);
-rect.strokeColor = '#eee';
+rect.strokeColor = '#b00';
 
 
 function setTriangleSize(s) {
@@ -1628,14 +1625,15 @@ function setTriangleSize(s) {
 var gridGroup = new Group();
 // gridGroup = drawGrid(gridGroup);
 
-var action = new Action();
+
 var db = {}; //createDatabase(new Size(nx, ny)); 
 var invertedIndex = new InvertedIndex;
 var shapes = new Shapes();
 var ui = new UI();
 var current = { triple: null, shape: null, selected: new Set() };
+var action = new Action();
 
-setTriangleSize(60);
+setTriangleSize(30);
 
 view.draw();
 
@@ -1684,7 +1682,10 @@ $("#download").click(function(e) {
         url: "save.php",
         async: false,
         type: "POST",
-        data: { "data": JSON.stringify(data) },
+        data: {
+            "data": JSON.stringify(data),
+            "folder": "saves",
+        },
     }).done(function(filepath) {
 
         anchor.attr("href", filepath);
