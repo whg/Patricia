@@ -678,7 +678,7 @@ function range(from, to) {
 }
 
 
-function pathFromPerimeterEdges(edges) {
+function pathFromPerimeterEdges(edges, getMin) {
     // takes the object created by getPerimeterEdges(),
     // namely, an object with edge ids as keys and
     // edge objects as values
@@ -690,6 +690,7 @@ function pathFromPerimeterEdges(edges) {
         this.elem = elem;
         this.data = {};
         this.branches = {};
+        this.counter = 0;
 
         this.clone = function() {
             var ret = new IndexHolder(this.elem);
@@ -719,16 +720,23 @@ function pathFromPerimeterEdges(edges) {
                 
                 if (this.branches[id] !== undefined) {
                     branch = this.branches[id].splice(0, 1);
+                    if (this.branches[id].length === 0){
+                        delete this.branches[id];
+                    }
+                    // branch = this.branches[id];
                 }
 
-                var r = this.data[id].splice(branch, 1);
+                this.counter++;
+                return this.data[id][branch];
+                // var r = this.data[id].splice(branch, 1);
 
-                if (r.length > 0) {
-                    ret = r[0];
-                }
-                if (this.data[id].length === 0){
-                    delete this.data[id];
-                }
+                // if (r.length > 0) {
+                //     ret = r[0];
+                // }
+                // if (this.data[id].length === 0){
+                //     delete this.data[id];
+                // }
+
             }
             return ret;
         };
@@ -738,6 +746,7 @@ function pathFromPerimeterEdges(edges) {
     for (var key in edges) {
         var e = edges[key];
         starts.pushEdge(e);
+        // console.log(edges[key].start + " -> " + edges[key].end);
     }
 
     // console.log(starts);
@@ -745,10 +754,12 @@ function pathFromPerimeterEdges(edges) {
     for (var key in starts.data) {
         if (starts.data[key].length == 2) {
             // console.log(key + " has " + starts.data[key]);
-            branches[key] = [[0, 0], [1, 0]]; //range(0, starts.data[key].length);
+            branches[key] = [[0, 1], [1, 0]]; //range(0, starts.data[key].length);
+            // branches[key] = [[0, 1], [1, 0]];
         }
         else if (starts.data[key].length === 3) {
-            branches[key] = [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0], [2, 0, 0], [2, 1, 0]];
+            // branches[key] = [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0], [2, 0, 0], [2, 1, 0]];
+            branches[key] = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
         }
     }
     var branchIndices = Object.keys(branches);
@@ -757,7 +768,7 @@ function pathFromPerimeterEdges(edges) {
         branchRoutes.push(branches[branchIndices[i]]);
     }
 
-    // console.log(branchIndices);
+    console.log("num branches = " + Object.keys(branches).length);
     // console.log(JSON.stringify(branchRoutes));
     // console.log(JSON.stringify(cartesianProductOf.apply(null, branchRoutes)));
 
@@ -773,27 +784,35 @@ function pathFromPerimeterEdges(edges) {
 
     function getPerim(starts) {
         // console.log("getPerim with branches " + JSON.stringify(starts.branches));// + " and " + JSON.stringify(starts.data));
-        var q = 0, qq = 0, l = Object.keys(starts.data).length;
+        var q = 0, qq = 0, l = Object.keys(edges).length;
         // console.log("l = " + l);
         var perims = [];
         do {
             var sortedStarts = sorted(Object.keys(starts.data));
-            if (/*qq >= (l-1) || */sortedStarts.length === 0) {
-                // console.log("breaking, qq = " + qq);
+            // if (sortedStarts.length === 0) {
+            if (starts.counter >= l) {
                 break;
             }
+            // console.log("contour " + q);
 
             var firstEdge = starts.data[sortedStarts[0]][0];
-            var perim = [starts.popIndex(firstEdge.start)];
-            var prevEdge, nextEdge;
-            // console.log("firstEdge = " + firstEdge);
-            do {
-                prevEdge = perim[perim.length-1];
-                nextEdge = starts.popIndex(prevEdge.end);
 
+            var nextEdge;
+            var prevEdge = starts.popIndex(firstEdge.start)
+            var perim = [prevEdge];
+            do {
+                // prevEdge = perim[perim.length-1];
+                nextEdge = starts.popIndex(prevEdge.end);
+                // console.log(nextEdge.id);
+                // console.log(prevEdge.start + " -> " + prevEdge.end);
                 perim.push(nextEdge);
-                qq++;
-            } while (nextEdge.end.id !== firstEdge.start.id/* && qq < 100*/);
+                prevEdge = nextEdge;
+                if (starts.counter > l+1) {
+                    // console.log("returning, counter = " + starts.counter);
+                    return false;
+                }
+                // qq++;
+            } while (nextEdge.end.id !== firstEdge.start.id);
 
             perims.push(perim);
 
@@ -802,12 +821,16 @@ function pathFromPerimeterEdges(edges) {
         return perims;
     }
 
-    if (branchRoutes.length === 0) {
+    if (branchRoutes.length === 0 /*|| !getMin*/) {
         var r = getPerim(starts);
         // console.log("with one, perims.length = " + r.length);
         return r;
     }
 
+    // if (!getMin) {
+        
+    // }
+    
     var outlines = [];
     for (var i = 0; i < routesMap.length; i++) {
         var startsWithBranches = starts.clone();
@@ -816,8 +839,11 @@ function pathFromPerimeterEdges(edges) {
         startsWithBranches.branches = routesMap[i]; //branches;
         
         var outline = getPerim(startsWithBranches);
+        // console.log("outline = " + outline);
+        if (outline.length === undefined) continue;
         if (outline.length === 1) {
-            // console.log("early exiting with " + outline);
+            console.log("early exiting with length" + outline.length + ", i = " + i + " of " + routesMap.length);
+            console.log(routesMap);
             return outline;
         }
         outlines.push(outline);
@@ -835,14 +861,14 @@ function pathFromPerimeterEdges(edges) {
     var mol = 1000, minOutline = undefined;
     
     outlines.forEach(function(outline) {
-        console.log("length  = " + outline.length + ", outline lengths = " + outline.map(function(e) { return e.length; }));
+        // console.log("length  = " + outline.length + ", outline lengths = " + outline.map(function(e) { return e.length; }));
         if (outline.length < mol) {
             
             minOutline = outline;
             mol = outline.length;
         }
     });
-    console.log("with multiple, perims.length = " + minOutline.length);
+    // console.log("with multiple, perims.length = " + minOutline.length);
     // console.log("we have " + perims.length + " outlines");
     return minOutline;
 }
