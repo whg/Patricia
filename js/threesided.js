@@ -5,10 +5,6 @@ paper.setup(document.getElementById("canvas"));
 var sqrt3 = Math.sqrt(3);
 
 
-var nx = 0, ny = 0, side = 0, alt = 0;
-var boundsSize = new Size(1520, 1032);
-
-
 var Index = Point;
 Index.prototype.toString = function() {
     return this.x + "," + this.y;
@@ -1174,6 +1170,86 @@ function Command(action, direction, args) {
     return this;
 }
 
+///////////////////////////////////////////////////////////////////////////
+// Actions
+
+var CreateTriangleAction = {
+    "forward": function(triple, shapeId){
+
+        shapes.add(shapeId);
+        // invertedIndex[triple] = shapeId;
+        // addTriangle(event);
+        ExtendShapeAction.forward(triple, shapeId);
+
+        //update UI
+        ui.updateShapes(shapes);
+
+        return "Create";
+    },
+    "backward": function(triple, shapeId){
+        shapes.remove(shapeId);
+        // delete invertedIndex[triple];
+        invertedIndex.remove(triple.id, shapeId);
+        return "Delete";
+    },
+};
+
+var ExtendShapeAction = {
+    "forward": function(triple, shapeId) {
+
+        //it's new so update the inverted index
+        shapes.get(shapeId).add(triple);
+        // invertedIndex[triple] = shapeId;
+        invertedIndex.add(triple.id, shapeId);
+        wm("extend shape at " + triple);
+
+        current.triple.id = triple;
+        shapes.get(shapeId).draw();
+
+        return "Extend";
+
+    },
+    
+    "backward": function(triple, shapeId) {
+
+        shapes.get(shapeId).remove(triple);
+        // delete invertedIndex[triple];
+        invertedIndex.remove(triple.id, shapeId);
+        shapes.get(shapeId).draw();
+        wm("shink shape at " + triple.id);
+        return "Shrink";
+    },
+    
+};
+
+var MoveShapeAction = {
+    "forward": function(shapeIds, moveTriple){
+
+        var shape, items, triple;
+
+        for (var i = 0; i < shapeIds.length; i++) {
+            shape = shapes.get(shapeIds[i]);
+            items = shape.items();
+            invertedIndex.removeShape(shape);
+            shape.clear();
+            for (var key in items) {
+                triple = items[key].add(moveTriple);
+                shape.add(triple);
+                invertedIndex.add(triple.id, shape.id);
+
+            }
+            shape.draw();
+        }
+
+        return "Move";
+    },
+    "backward": function(shapeIds, moveTriple){
+        console.log("adfsasdfkljasd " + moveTriple);
+        return this.forward(shapeIds, moveTriple.inverse());
+    },
+};
+
+
 function Invoker() {
     var commands = [];
     var pos = 0;
@@ -1206,8 +1282,42 @@ function Invoker() {
     };
 }
 
+function KeyComboHandler() {
+    var combos = {};
 
-function Action() {
+    function keysFromEvent(event) {
+        var keys = [];
+        for (var mod in event.modifiers) {
+            if (event.modifiers[mod]) {
+                keys.push(mod);
+            }
+        }
+        keys.push(event.key);
+        return keys;
+    }
+
+    
+    function makeKeyComboId(keys) {
+        return sorted(keys).join("+");
+    }
+
+    this.add = function(keys, obj, func) {
+        combos[makeKeyComboId(keys)] = function() { obj[func].apply(obj); };
+    }
+
+    this.call = function(event) {
+        var keys = keysFromEvent(event);
+        var id = makeKeyComboId(keys);
+        if (combos[id] !== undefined) {
+            combos[id]();
+            event.preventDefault();
+            return false;
+        }
+    }
+}
+
+
+function Action(invoker, keyHandler) {
 
     function pan(event) {
         project.activeLayer.translate(event.delta);
@@ -1217,60 +1327,7 @@ function Action() {
         project.activeLayer.scale(1 + (event.delta.y * 0.005), event.point);
     }
 
-    // function ExtendShapeAction(direction) {
-    // }
 
-    var CreateTriangleAction = {
-        "forward": function(triple, shapeId){
-
-            shapes.add(shapeId);
-            // invertedIndex[triple] = shapeId;
-            // addTriangle(event);
-            ExtendShapeAction.forward(triple, shapeId);
-
-            //update UI
-            ui.updateShapes(shapes);
-
-            return "Create";
-        },
-        "backward": function(triple, shapeId){
-            shapes.remove(shapeId);
-            // delete invertedIndex[triple];
-            invertedIndex.remove(triple.id, shapeId);
-            return "Delete";
-        },
-    };
-
-    var ExtendShapeAction = {
-        "forward": function(triple, shapeId) {
-
-            //it's new so update the inverted index
-            shapes.get(shapeId).add(triple);
-            // invertedIndex[triple] = shapeId;
-            invertedIndex.add(triple.id, shapeId);
-            wm("extend shape at " + triple);
-
-            current.triple.id = triple;
-            shapes.get(shapeId).draw();
-
-            return "Extend";
-
-        },
-        
-        "backward": function(triple, shapeId) {
-
-            shapes.get(shapeId).remove(triple);
-            // delete invertedIndex[triple];
-            invertedIndex.remove(triple.id, shapeId);
-            shapes.get(shapeId).draw();
-            wm("shink shape at " + triple.id);
-            return "Shrink";
-        },
-        
-    };
-
-
-    var invoker = new Invoker();
     
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
@@ -1287,7 +1344,6 @@ function Action() {
             }
         }
         current.triple = triple;
-        // ExtendShapeAction.forward(triple);        
     }
 
     function findShape(event) {
@@ -1298,12 +1354,10 @@ function Action() {
         }
         current.triple = triple;
         current.shape = shapes.highestFromArray(invertedIndex.at(current.triple.id));
-         // current.triple = triple.id;
-        // console.log(invertedIndex);
-        // console.log(triple.id);
+
         if (current.shape === undefined) {
-            current.shape = shapes.nextId();// uidc.next();
-            // ASDFASD
+            current.shape = shapes.nextId();
+
             invoker.push(CreateTriangleAction, "forward", [current.triple, current.shape]);
         }
 
@@ -1358,32 +1412,6 @@ function Action() {
         
     }
 
-    var MoveShapeAction = {
-        "forward": function(shapeIds, moveTriple){
-
-            var shape, items, triple;
-
-            for (var i = 0; i < shapeIds.length; i++) {
-                shape = shapes.get(shapeIds[i]);
-                items = shape.items();
-                invertedIndex.removeShape(shape);
-                shape.clear();
-                for (var key in items) {
-                    triple = items[key].add(moveTriple);
-                    shape.add(triple);
-                    invertedIndex.add(triple.id, shape.id);
-
-                }
-                shape.draw();
-            }
-
-            return "Move";
-        },
-        "backward": function(shapeIds, moveTriple){
-            console.log("adfsasdfkljasd " + moveTriple);
-            return this.forward(shapeIds, moveTriple.inverse());
-        },
-    };
 
 
     function moveShapes(event) {
@@ -1455,46 +1483,8 @@ function Action() {
         paper.view.draw();
     }
 
-    function KeyComboHandler() {
-        var combos = {};
 
-        function keysFromEvent(event) {
-            var keys = [];
-            for (var mod in event.modifiers) {
-                if (event.modifiers[mod]) {
-                    keys.push(mod);
-                }
-            }
-            keys.push(event.key);
-            return keys;
-        }
-
-        
-        function makeKeyComboId(keys) {
-            return sorted(keys).join("+");
-        }
-
-        this.add = function(keys, obj, func) {
-            combos[makeKeyComboId(keys)] = function() { obj[func].apply(obj); };
-        }
-
-        this.call = function(event) {
-            var keys = keysFromEvent(event);
-            var id = makeKeyComboId(keys);
-            if (combos[id] !== undefined) {
-                combos[id]();
-                // this.combos[id].apply(this)
-                event.preventDefault();
-                return false;
-            }
-        }
-    }
-
-    var keyHandler = new KeyComboHandler();
-    keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invoker.redo(); });
-    // keyHandler.add(["q", "shift"], function() { console.log("BIG QQQ!")});
-    keyHandler.add(["command", "z"], invoker, "undo"); //function() { invoker.undo(); });
-    keyHandler.add(["command", "p"], shapes, "plot");
+    
 
     tool.onKeyDown = function onKeyDown(event) {
 
@@ -1573,31 +1563,6 @@ function Action() {
 project.activeLayer.transformContent = false;
 
 
-var outline = new CompoundPath({
-    strokeColor: 'black',
-    fillColor: "#cfe",
-    // closed: true,
-});
-
-// debugger;
-
-// project.activeLayer.scale(d2);
-
-// console.log();
-// console.log(db);
-
-// drawAllPoints();
-
-// console.log(avg([12,243.4,3.2,4,5.5]));
-
-// for(var i = 1; i < nx; i+=2) {
-//     console.log(i);
-//     var sq = new Path.Circle(pointAtIndex(new Index(i, ny)).add(os), 2.5);
-//     sq.fillColor = "#bbb";
-// }
-var rect = new Path.Rectangle(new Point(0, 0), boundsSize);
-rect.strokeColor = '#b00';
-
 
 function setTriangleSize(s) {
     side = s;
@@ -1625,30 +1590,32 @@ function setTriangleSize(s) {
 var gridGroup = new Group();
 // gridGroup = drawGrid(gridGroup);
 
+var nx = 0, ny = 0, side = 0, alt = 0;
+var boundsSize = new Size(1520, 1032);
+
+var rect = new Path.Rectangle(new Point(0, 0), boundsSize);
+rect.strokeColor = '#b00';
 
 var db = {}; //createDatabase(new Size(nx, ny)); 
 var invertedIndex = new InvertedIndex;
 var shapes = new Shapes();
 var ui = new UI();
 var current = { triple: null, shape: null, selected: new Set() };
-var action = new Action();
+var invoker = new Invoker();
+var keyHandler = new KeyComboHandler();
+keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invoker.redo(); });
+// keyHandler.add(["q", "shift"], function() { console.log("BIG QQQ!")});
+keyHandler.add(["command", "z"], invoker, "undo"); //function() { invoker.undo(); });
+keyHandler.add(["command", "p"], shapes, "plot");
+
+
+var action = new Action(invoker, keyHandler);
 
 setTriangleSize(30);
 
 view.draw();
 
-
-
-// };
-
-
-
 /*
-
-COMMANDS - for undo
-- add triangle
-- remove triangle
-- 
 
 MODES
 

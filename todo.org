@@ -1,16 +1,18 @@
 
+
+
+
 # * TODO
-* TODO layers
-so you can move shapes off the main grid
-* TODO dynamic triangle size change
+* TODO [#A] erase mode
+* TODO [#A] plot only single line
+* TODO [#A] select shapes by marque
+* TODO [#B] dynamic triangle size change
 * TODO make grid transparent
 sometime
-* TODO select shapes by marque
 * TODO copy and paste
 CLOCK: [2015-01-29 Thu 23:02]--[2015-02-04 Wed 23:02] => 144:00
 
 * TODO rotate
-* TODO plot only single line
 * TODO activate regions to plot
 * TODO choose colour of shapes
 colours should be kept in another data structure other than the
@@ -20,11 +22,13 @@ nicer. will work fine as shape id are not reused.
 use a bucket type of thing
 * TODO set pens to plot with
 choose colour of each pen
-* TODO [#A] erase mode
 
 * TODO better modes for operation
 * TODO merge shapes (into one colour)
+* TODO layers
+so you can move shapes off the main grid
 * TODO throttle data to plotter
+instead of writing straight to serial, use chiplotle.
 * DONE save and load state
 CLOSED: [2015-01-27 Tue 16:50]
 * DONE continue/merge line in shape
@@ -60,9 +64,9 @@ CLOSED: [2015-01-26 Mon 12:18]
 
 
 
-* 
 
-this is something adsfa
-this is something af\
-this is something asdff
-this is something dsd
+* BUGS
+
+** move off the grid crashes
+
+** when you upload, doesn't clear
