@@ -899,7 +899,7 @@ function TShape(idOrData, order) {
         strokeColor: 'black',
     });
 
-    // this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random(), 0.4);
+    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random());
 
     this.draw = function(getMinOutline) {
         var outerEdges = getPerimeterEdges(this);
@@ -925,6 +925,7 @@ function TShape(idOrData, order) {
             "order": this.order,
         };
     };
+
 
     // this.plot = function() {
     //     this.perims = pathFromPerimeterEdges(getPerimeterEdges(this));
@@ -963,6 +964,10 @@ function InvertedIndex() {
                 delete index[tripleId];
             }
         }
+    };
+
+    this.removeAll = function(tripleId) {
+        delete index[tripleId];
     };
 
     this.addShape = function(shape) {
@@ -1009,11 +1014,13 @@ function Shapes() {
     this.add = function(key) {
         shapes[key] = new TShape(key, Object.keys(shapes).length);
         // shapes[key].outline.setLayer(layer);
+        ui.updateShapes(this);
     };
 
     this.remove = function(key) {
         shapes[key].outline.remove();
         delete shapes[key];
+        ui.updateShapes(this);
 
     };
 
@@ -1194,9 +1201,6 @@ var CreateTriangleAction = {
         // addTriangle(event);
         ExtendShapeAction.forward(triple, shapeId);
 
-        //update UI
-        ui.updateShapes(shapes);
-
         return "Create";
     },
     "backward": function(triple, shapeId){
@@ -1259,6 +1263,41 @@ var MoveShapeAction = {
     "backward": function(shapeIds, moveTriple){
         console.log("adfsasdfkljasd " + moveTriple);
         return this.forward(shapeIds, moveTriple.inverse());
+    },
+};
+
+var EraseTriangleAction = {
+    "forward": function(triple, shapeIds) {
+        for (var i = 0; i < shapeIds.length; i++) {
+
+            shapes.get(shapeIds[i]).remove(triple);
+
+            if (shapes.get(shapeIds[i]).values().length === 0) {
+                shapes.remove(shapeIds[i]);
+            }
+            else {
+                shapes.get(shapeIds[i]).draw();
+            }
+            
+            
+        }
+        invertedIndex.removeAll(triple.id);
+        // shapes.get(shapeId).remove(triple);
+        
+        // // delete invertedIndex[triple];
+        // invertedIndex.remove(triple.id, shapeId);
+        return "Erase";
+    },
+    "backward": function(triple, shapeIds) {
+        for (var i = 0; i < shapeIds.length; i++) {
+            if (shapes.get(shapeIds[i]) === undefined) {
+               shapes.add(shapeIds[i]); 
+            }
+            shapes.get(shapeIds[i]).add(triple);
+            invertedIndex.add(triple.id, shapeIds[i]);
+            shapes.get(shapeIds[i]).draw();
+        }
+      
     },
 };
 
@@ -1443,6 +1482,24 @@ function Action(invoker, keyHandler) {
         
     }
 
+    function eraseTriangle(event) {
+        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+
+        if (invertedIndex.has(triple.id)) {
+            invoker.push(EraseTriangleAction, "forward", [triple, invertedIndex.at(triple.id).slice()]);
+            
+            // if (shapes.get(current.shape).has(current.triple)) {
+        
+            //     var action = ExtendShapeAction;
+            //     if (shapes.get(current.shape).values().length === 1) {
+            //         action = CreateTriangleAction;
+            //     }
+            //     invoker.push(action, "backward", [current.triple, current.shape]);
+            // }
+            // current.triple = triple;
+        }   
+        
+    }
 
     function createMouseMode(init, mouseDown, mouseDrag, mouseScroll) {
         return {
@@ -1464,7 +1521,7 @@ function Action(invoker, keyHandler) {
         "option": createMouseMode(none, none, pan, zoom),
         "d": createMouseMode(none, findShape, removeTriangle, pan),
         "m": createMouseMode(none, selectShapes, moveShapes, none),
-
+        "e": createMouseMode(none, eraseTriangle, eraseTriangle, none),
     };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };

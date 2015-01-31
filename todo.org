@@ -1,12 +1,6 @@
 
-
-
-
-# * TODO
-* TODO [#A] erase mode
 * TODO [#A] plot only single line
 * TODO [#A] select shapes by marque
-
 * TODO make grid transparent
 sometime
 * TODO copy and paste
@@ -29,6 +23,8 @@ choose colour of each pen
 so you can move shapes off the main grid
 * TODO throttle data to plotter
 instead of writing straight to serial, use chiplotle.
+* DONE [#A] erase mode
+CLOSED: [2015-01-31 Sat 14:16]
 * DONE [#B] dynamic triangle size change
 CLOSED: [2015-01-31 Sat 13:33]
 * DONE save and load state
