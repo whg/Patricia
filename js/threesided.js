@@ -300,7 +300,7 @@ function drawGridLines(type, size, group) {
         var p = new Path.Line({
             from: pointAtGridIndex(line.start),
             to: pointAtGridIndex(line.end),
-            strokeColor: '#eee',
+            strokeColor: '#bbb',
             strokeScaling: false,
         });
         line = nextLine(line, type, size);
@@ -1081,7 +1081,7 @@ function Shapes() {
     };
     
     this.plot = function() {
-      console.log(this);
+
         var paths = [];
         for (var shapeId in shapes) {
             var shape = shapes[shapeId];
@@ -1104,6 +1104,19 @@ function Shapes() {
             console.log("sent file to plot");
         });
 
+    };
+
+    this.removeOutside = function(db, invertedIndex) {
+        for (var shapeId in shapes) {
+            var shape = shapes[shapeId];
+            for (var indexId in shape._values) {
+                var tripleId = shape._values[indexId];
+                if (db[tripleId] === undefined) {
+                    shape.remove(tripleId);
+                    invertedIndex.remove(tripleId, shapeId);
+                }
+            }
+        }
     };
     
     return this;
@@ -1303,7 +1316,7 @@ function KeyComboHandler() {
 
     this.add = function(keys, obj, func) {
         combos[makeKeyComboId(keys)] = function() { obj[func].apply(obj); };
-    }
+    };
 
     this.call = function(event) {
         var keys = keysFromEvent(event);
@@ -1313,7 +1326,10 @@ function KeyComboHandler() {
             event.preventDefault();
             return false;
         }
-    }
+    };
+
+    
+    return this;
 }
 
 
@@ -1565,8 +1581,9 @@ project.activeLayer.transformContent = false;
 
 
 function setTriangleSize(s) {
+    
     side = s;
-    alt = sqrt3 * side * 0.5;
+    alt = Math.sqrt(3) * side * 0.5;
     nx = Math.floor(boundsSize.width / alt) + 1;
     ny = Math.floor(boundsSize.height / side * 2) + 1;
 
@@ -1579,8 +1596,10 @@ function setTriangleSize(s) {
     //     shapes.get(shapeId).draw();
     // }
 
-    shapes.draw();
+    shapes.removeOutside(db, invertedIndex);
 
+    shapes.draw();
+    current.triangleSize = s;
     project.view.draw();
 }
 
@@ -1600,18 +1619,22 @@ var db = {}; //createDatabase(new Size(nx, ny));
 var invertedIndex = new InvertedIndex;
 var shapes = new Shapes();
 var ui = new UI();
-var current = { triple: null, shape: null, selected: new Set() };
+var current = {
+    triple: null,
+    shape: null,
+    selected: new Set(),
+    triangleSize: 50,
+};
 var invoker = new Invoker();
 var keyHandler = new KeyComboHandler();
 keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invoker.redo(); });
-// keyHandler.add(["q", "shift"], function() { console.log("BIG QQQ!")});
 keyHandler.add(["command", "z"], invoker, "undo"); //function() { invoker.undo(); });
 keyHandler.add(["command", "p"], shapes, "plot");
 
 
 var action = new Action(invoker, keyHandler);
 
-setTriangleSize(30);
+setTriangleSize($("#trianglesize").val());
 
 view.draw();
 
@@ -1691,3 +1714,14 @@ $("input:file").change(function (){
 
     fileReader.readAsText(file);
 });
+
+
+$("#trianglesize").on("mousemove",function(e){
+    // console.log();
+    var newsize = $(this).val();
+    if (newsize !== current.triangleSize) {
+        setTriangleSize(newsize);
+    }
+});
+
+$("#slider").slider();
