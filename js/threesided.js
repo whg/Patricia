@@ -1453,27 +1453,27 @@ function Action(invoker, keyHandler) {
     function selectShapes(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         var sid = shapes.highestFromArray(invertedIndex.at(triple.id)); //invertedIndex[triple.id];
-        console.log(sid);
-        console.log(triple);
-        if (sid === undefined) {
-            for (var shape in current.selected._values) {
-                shapes.get(shape).outline.selected = false;
-            }
 
+        if (sid === undefined) {
             current.selected.clear();
         }
         else {
-            if (!modifierStates["shift"] && !current.selected.has(sid)) {
-                for (var shape in current.selected._values) {
-                    shapes.get(shape).outline.selected = false;
-                }
+            if (!modifierStates["shift"]) {
                 
-                current.selected.clear();
+                if (!current.selected.has(sid)){
+                    current.selected.clear();
+                }
+            }
+            else {
+                if (current.selected.has(sid)) {
+                    current.selected.remove(sid);
+                }
+                else {
+                    current.selected.add(sid);
+                }
+
             }
             
-            current.selected.add(sid);
-            shapes.get(sid).outline.selected = true;
-
             current.triple = triple;
         }
         
@@ -1503,71 +1503,47 @@ function Action(invoker, keyHandler) {
         
     }
 
-    var mr = new Path.Rectangle(new Point(100, 100), new Point(200, 200));
-    mr.strokeColor = "#0af";
-    mr.strokeWidth = 1;
-    mr.visible = false;
-    var selectedTriples = new SetWithUniverse();
-    var c1 = new Path.Circle(new Point(), 2);
-    var c2 = new Path.Circle(new Point(), 2);
-    c1.fillColor = "red";
-    c2.fillColor = "green";
+    var marqueRect = new Path.Rectangle(new Point(100, 100), new Point(200, 200));
+    marqueRect.strokeColor = "#0af";
+    marqueRect.strokeWidth = 1;
+    marqueRect.visible = false;
     
     function marqueShapes(event) {
 
-        // for (var shape in current.selected._values) {
-        //     shapes.get(shape).outline.selected = false;
-        // }
-
         current.selected.clear();
+
+        // make the marque
         
-        // mr = new Path.Rectangle(event.downPoint, event.point);
-        // mr = new Path.Rectangle(event.downPoint, event.point);
-        // mr.strokeColor = "#0f0";
         var p1 = project.activeLayer.globalToLocal(event.downPoint);
         var p2 = project.activeLayer.globalToLocal(event.point);
+
         if (p2.x < p1.x) {
             var temp = new Point(p1);
             p1 = p2;
-            p2 = temp;
-            
+            p2 = temp;    
         }
         if (p1.y > p2.y) {
             var temp = p1.y;
             p1.y = p2.y;
             p2.y = temp;
         }
-        // p1 = Point.min(p1, p2);
-        // p2 = Point.max(p1, p2);
+
         var pts = [[p1.x, p1.y], [p2.x, p1.y], [p2.x, p2.y], [p1.x, p2.y]];
         for (var i = 0; i < 4; i++) {
-            mr.segments[i].point.x = pts[i][0];
-            mr.segments[i].point.y = pts[i][1];
+            marqueRect.segments[i].point.x = pts[i][0];
+            marqueRect.segments[i].point.y = pts[i][1];
         }
-        mr.visible = true;
-        // return;
-        // mr.segments[0].point.x = p1.x;
-        // mr.segments[0].point.x = p1.x;
-        // console.log(event);
-        // console.log(mr);
+        marqueRect.visible = true;
 
-        // var indexRect = new Rectangle(p1, p2);
-        // console.log(indexRect);
+        // now find all the shapes
+        
         var range = p2.subtract(p1);
-        console.log(c1.position);
-        c1.position = p1;
-        c2.position = p2;
         
         for (var i = 0; i < range.x; i+= alt) {
             for (var j = 0; j < range.y; j+= side*0.25) {
-                var qp = p1.add(new Point(i, j));
-                // var c = new Path.Circle(qp, 2);
-                // c.fillColor = "red";
 
+                var qp = p1.add(new Point(i, j));
                 var triple = worldToTriple(qp, alt);
-                // if(!isValidTriple(triple)) {
-                //     continue;
-                // }
                 
                 if (invertedIndex.has(triple.id)) {
                     var shapeIds = invertedIndex.at(triple.id);
@@ -1575,45 +1551,14 @@ function Action(invoker, keyHandler) {
                     for (var k = 0; k < shapeIds.length; k++) {
                         var sid = shapeIds[k];
                         current.selected.add(sid);
-                        // shapes.get(sid).outline.selected = true;
                     }
                 }
-                
-                // var verts = db[triple.id].vertices;                
-                // var outside = false;
-                // for (var k = 0; k < 3; k++) {
-                //     if (!pointAtGridIndex(verts[k]).isInside(mr)) {
-                //         // selectedTriples.add(triple);
-                //         outside = true;
-                //         break;
-                //     }
-                // }
-                // if (!outside) {
-                //     console.log("adding " + JSON.stringify(verts));
-                //     selectedTriples.add(triple);
-                // }
-
-                
-                // console.log(triangle);
-
-                // console.log(triple);
-                // selectedTriples.add(triple);
             }
         }
     }
 
     function marqueShapesUp(event) {
-        mr.visible = false;
-        return;
-        console.log(JSON.stringify(Object.keys(selectedTriples._values)));
-        shapes.clear();
-        var i = 0;
-        for (var tripleId in selectedTriples._values) {
-            console.log(selectedTriples._values[tripleId]);
-            CreateTriangleAction.forward(selectedTriples._values[tripleId], i++);
-            // shapes.add(shapes.nextId());
-        }
-        selectedTriples.clear();
+        marqueRect.visible = false;
     }
 
     function createMouseMode(init, mouseDown, mouseDrag, mouseScroll, mouseUp) {
