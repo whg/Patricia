@@ -1,6 +1,8 @@
 
 * TODO [#A] plot only single line
 * TODO [#A] select shapes by marque
+if you drag one way, select anything that touches,
+if you go the other, you have to select all points
 * TODO make grid transparent
 sometime
 * TODO copy and paste

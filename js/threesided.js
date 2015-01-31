@@ -200,6 +200,9 @@ function pointAtGridIndex(index) {
     return new Point(index.x * alt, index.y * side * 0.5);
 }
 
+function pointToGridIndex(gridPoint) {
+    return new Point(Math.floor(gridPoint.x / alt), Math.floor(gridPoint.y * 2 / side));
+}
 
 function drawAllPoints() {
     for(var i = 0; i < nx; i++) {
@@ -460,8 +463,11 @@ function worldToTriple(point, alt) {
 //   var s = new Set();
 //   s.add(5);
 function Set() {
+
     this._values = {};
     
+    this.addcb = undefined;
+    this.removecb = undefined;
     
     this.has = function(e) {
         // this is the fastest way to do this
@@ -473,6 +479,9 @@ function Set() {
     this.add = function(e) {
         if (!this.has(e)) {
             this._values[e] = e;
+            if (this.addcb !== undefined) {
+                this.addcb.call(this, e);
+            }
             return true;
         }
         return false;
@@ -480,15 +489,18 @@ function Set() {
 
     this.remove = function(e) {
         delete this._values[e];
-    }
+        if (this.removecb !== undefined) {
+            this.removecb.call(this, e);
+        }
+    };
 
     this.clear = function() {
         // is this._values = {} better?
         for (var key in this._values) {
-            delete this._values[key];
+            this.remove(key);
         }
         this._values = {};
-    }
+    };
 
     this.values = function() {
         return Object.keys(this._values);
@@ -1070,12 +1082,12 @@ function Shapes() {
         
     };
 
-    function clear() {
+    this.clear = function() {
         for (var key in shapes) {
             delete shapes[key];
         }
         shapes = {};
-    }
+    };
     
     this.loadState = function(obj) {
 
@@ -1088,7 +1100,7 @@ function Shapes() {
     };
     
     this.plot = function() {
-
+        console.log("plotting");
         var paths = [];
         for (var shapeId in shapes) {
             var shape = shapes[shapeId];
@@ -1487,26 +1499,130 @@ function Action(invoker, keyHandler) {
 
         if (invertedIndex.has(triple.id)) {
             invoker.push(EraseTriangleAction, "forward", [triple, invertedIndex.at(triple.id).slice()]);
-            
-            // if (shapes.get(current.shape).has(current.triple)) {
-        
-            //     var action = ExtendShapeAction;
-            //     if (shapes.get(current.shape).values().length === 1) {
-            //         action = CreateTriangleAction;
-            //     }
-            //     invoker.push(action, "backward", [current.triple, current.shape]);
-            // }
-            // current.triple = triple;
         }   
         
     }
 
-    function createMouseMode(init, mouseDown, mouseDrag, mouseScroll) {
+    var mr = new Path.Rectangle(new Point(100, 100), new Point(200, 200));
+    mr.strokeColor = "#0af";
+    mr.strokeWidth = 1;
+    mr.visible = false;
+    var selectedTriples = new SetWithUniverse();
+    var c1 = new Path.Circle(new Point(), 2);
+    var c2 = new Path.Circle(new Point(), 2);
+    c1.fillColor = "red";
+    c2.fillColor = "green";
+    
+    function marqueShapes(event) {
+
+        // for (var shape in current.selected._values) {
+        //     shapes.get(shape).outline.selected = false;
+        // }
+
+        current.selected.clear();
+        
+        // mr = new Path.Rectangle(event.downPoint, event.point);
+        // mr = new Path.Rectangle(event.downPoint, event.point);
+        // mr.strokeColor = "#0f0";
+        var p1 = project.activeLayer.globalToLocal(event.downPoint);
+        var p2 = project.activeLayer.globalToLocal(event.point);
+        if (p2.x < p1.x) {
+            var temp = new Point(p1);
+            p1 = p2;
+            p2 = temp;
+            
+        }
+        if (p1.y > p2.y) {
+            var temp = p1.y;
+            p1.y = p2.y;
+            p2.y = temp;
+        }
+        // p1 = Point.min(p1, p2);
+        // p2 = Point.max(p1, p2);
+        var pts = [[p1.x, p1.y], [p2.x, p1.y], [p2.x, p2.y], [p1.x, p2.y]];
+        for (var i = 0; i < 4; i++) {
+            mr.segments[i].point.x = pts[i][0];
+            mr.segments[i].point.y = pts[i][1];
+        }
+        mr.visible = true;
+        // return;
+        // mr.segments[0].point.x = p1.x;
+        // mr.segments[0].point.x = p1.x;
+        // console.log(event);
+        // console.log(mr);
+
+        // var indexRect = new Rectangle(p1, p2);
+        // console.log(indexRect);
+        var range = p2.subtract(p1);
+        console.log(c1.position);
+        c1.position = p1;
+        c2.position = p2;
+        
+        for (var i = 0; i < range.x; i+= alt) {
+            for (var j = 0; j < range.y; j+= side*0.25) {
+                var qp = p1.add(new Point(i, j));
+                // var c = new Path.Circle(qp, 2);
+                // c.fillColor = "red";
+
+                var triple = worldToTriple(qp, alt);
+                // if(!isValidTriple(triple)) {
+                //     continue;
+                // }
+                
+                if (invertedIndex.has(triple.id)) {
+                    var shapeIds = invertedIndex.at(triple.id);
+                    console.log(shapeIds);
+                    for (var k = 0; k < shapeIds.length; k++) {
+                        var sid = shapeIds[k];
+                        current.selected.add(sid);
+                        // shapes.get(sid).outline.selected = true;
+                    }
+                }
+                
+                // var verts = db[triple.id].vertices;                
+                // var outside = false;
+                // for (var k = 0; k < 3; k++) {
+                //     if (!pointAtGridIndex(verts[k]).isInside(mr)) {
+                //         // selectedTriples.add(triple);
+                //         outside = true;
+                //         break;
+                //     }
+                // }
+                // if (!outside) {
+                //     console.log("adding " + JSON.stringify(verts));
+                //     selectedTriples.add(triple);
+                // }
+
+                
+                // console.log(triangle);
+
+                // console.log(triple);
+                // selectedTriples.add(triple);
+            }
+        }
+    }
+
+    function marqueShapesUp(event) {
+        mr.visible = false;
+        return;
+        console.log(JSON.stringify(Object.keys(selectedTriples._values)));
+        shapes.clear();
+        var i = 0;
+        for (var tripleId in selectedTriples._values) {
+            console.log(selectedTriples._values[tripleId]);
+            CreateTriangleAction.forward(selectedTriples._values[tripleId], i++);
+            // shapes.add(shapes.nextId());
+        }
+        selectedTriples.clear();
+    }
+
+    function createMouseMode(init, mouseDown, mouseDrag, mouseScroll, mouseUp) {
         return {
             init: init,
             mouseDown: mouseDown,
             mouseDrag: mouseDrag,
             mouseScroll: mouseScroll,
+            mouseUp: mouseUp,
         };
     }
 
@@ -1515,13 +1631,13 @@ function Action(invoker, keyHandler) {
     var none = function() {};
     
     var modes = {
-        "v": createMouseMode(none, none, pan, zoom),
-        "a": createMouseMode(none, findShape, addTriangle, pan),
-        "s": createMouseMode(none, selectShapes, none, none),
-        "option": createMouseMode(none, none, pan, zoom),
-        "d": createMouseMode(none, findShape, removeTriangle, pan),
-        "m": createMouseMode(none, selectShapes, moveShapes, none),
-        "e": createMouseMode(none, eraseTriangle, eraseTriangle, none),
+        "v": createMouseMode(none, none, pan, zoom, none),
+        "a": createMouseMode(none, findShape, addTriangle, pan, none),
+        "s": createMouseMode(none, selectShapes, marqueShapes, none, marqueShapesUp),
+        "option": createMouseMode(none, none, pan, zoom, none),
+        "d": createMouseMode(none, findShape, removeTriangle, pan, none),
+        "m": createMouseMode(none, selectShapes, moveShapes, none, none),
+        "e": createMouseMode(none, eraseTriangle, eraseTriangle, none, none),
     };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
@@ -1556,7 +1672,9 @@ function Action(invoker, keyHandler) {
         paper.view.draw();
     }
 
-
+    tool.onMouseUp = function(event) {
+        modes[currentKey].mouseUp(event);
+    }
     
 
     tool.onKeyDown = function onKeyDown(event) {
@@ -1682,6 +1800,15 @@ var current = {
     selected: new Set(),
     triangleSize: 50,
 };
+
+current.selected.removecb = function(shapeId) {
+    shapes.get(shapeId).outline.selected = false;
+};
+
+current.selected.addcb = function(shapeId) {
+    shapes.get(shapeId).outline.selected = true;
+};
+
 var invoker = new Invoker();
 var keyHandler = new KeyComboHandler();
 keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invoker.redo(); });
