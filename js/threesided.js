@@ -1462,6 +1462,8 @@ function Action(invoker, keyHandler) {
                 
                 if (!current.selected.has(sid)){
                     current.selected.clear();
+                } else {
+                    current.selected.add(sid);
                 }
             }
             else {
@@ -1510,7 +1512,11 @@ function Action(invoker, keyHandler) {
     
     function marqueShapes(event) {
 
-        current.selected.clear();
+        current.triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+
+        if (!modifierStates["shift"]) {
+            current.selected.clear();
+        }
 
         // make the marque
         
@@ -1536,21 +1542,25 @@ function Action(invoker, keyHandler) {
         marqueRect.visible = true;
 
         // now find all the shapes
-        
         var range = p2.subtract(p1);
         
-        for (var i = 0; i < range.x; i+= alt) {
-            for (var j = 0; j < range.y; j+= side*0.25) {
+        for (var i = 0; i <= range.x; i+= alt) {
+            for (var j = 0; j <= range.y; j+= side*0.25) {
 
                 var qp = p1.add(new Point(i, j));
                 var triple = worldToTriple(qp, alt);
                 
                 if (invertedIndex.has(triple.id)) {
                     var shapeIds = invertedIndex.at(triple.id);
-                    console.log(shapeIds);
+
                     for (var k = 0; k < shapeIds.length; k++) {
                         var sid = shapeIds[k];
-                        current.selected.add(sid);
+                        if (current.selected.has(sid) && modifierStates["shift"]) {
+                            current.selected.remove(sid);
+                        }
+                        else {
+                            current.selected.add(sid);
+                        }
                     }
                 }
             }
@@ -1578,10 +1588,10 @@ function Action(invoker, keyHandler) {
     var modes = {
         "v": createMouseMode(none, none, pan, zoom, none),
         "a": createMouseMode(none, findShape, addTriangle, pan, none),
-        "s": createMouseMode(none, selectShapes, marqueShapes, none, marqueShapesUp),
+        "s": createMouseMode(none, marqueShapes, marqueShapes, none, marqueShapesUp),
         "option": createMouseMode(none, none, pan, zoom, none),
         "d": createMouseMode(none, findShape, removeTriangle, pan, none),
-        "m": createMouseMode(none, selectShapes, moveShapes, none, none),
+        "m": createMouseMode(none, marqueShapes, moveShapes, none, none),
         "e": createMouseMode(none, eraseTriangle, eraseTriangle, none, none),
     };
 
