@@ -18,15 +18,6 @@ class DXY980(_DrawingPlotter):
         _DrawingPlotter.__init__(self, ser, **kwargs)
         self.type = "DXY-980"
 
-    def initialize_plotter(self):
-        print("doing nothing")
-        # pass
-
-
-# if len(sys.argv) < 2:
-#     print("no file to print")
-
-
     
 def digital2real(p):
     """

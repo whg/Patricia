@@ -1,26 +1,29 @@
 
 * TODO [#A] plot only single line
-* TODO make grid transparent
-sometime
-* TODO copy and paste
-CLOCK: [2015-01-29 Thu 23:02]--[2015-02-04 Wed 23:02] => 144:00
 
-* TODO rotate
-* TODO activate regions to plot
+* TODO only 8 colours
+* TODO set pens to plot with
+choose colour of each pen
 * TODO choose colour of shapes
 colours should be kept in another data structure other than the
 shapes array/holder. this is so undo deleting shapes works a bit
 nicer. will work fine as shape id are not reused.
 
 use a bucket type of thing
-* TODO set pens to plot with
-choose colour of each pen
+* TODO make grid transparent
+sometime
+* TODO copy and paste
+CLOCK: [2015-01-29 Thu 23:02]--[2015-02-04 Wed 23:02] => 144:00
 
+* TODO rotate
 * TODO better modes for operation
 * TODO merge shapes (into one colour)
 * TODO layers
 so you can move shapes off the main grid
-* TODO throttle data to plotter
+* DONE activate regions to plot
+CLOSED: [2015-02-02 Mon 11:24]
+* DONE throttle data to plotter
+CLOSED: [2015-02-02 Mon 11:24]
 instead of writing straight to serial, use chiplotle.
 * DONE [#A] select shapes by marque
 CLOSED: [2015-01-31 Sat 17:33]

@@ -130,11 +130,259 @@ for(var i = 0; i < things.length; i++) {
     });
 }
 
-function ILine(startIndex, endIndex) {
+function IndexLine(startIndex, endIndex) {
     this.start = startIndex;
     this.end = endIndex;
     return this;
 }
+
+function Line(m, c) {
+
+    this.m = m;
+    this.c = c;
+
+    this.pointAtX = function(x) {
+        // y = mx + c
+        return new Point(x, this.m * x + c);
+    };
+
+    this.pointAtY = function(y) {
+        // x = (y - c) / m
+        return new Point((y - this.c) / this.m, y);
+    };
+
+    
+    return this;
+}
+
+function lineAtPointWithAngle(point, angle) {
+    var m = gradientFromAngle(angle);
+    return Line(m, point.y - m * point.x);
+}
+
+var toRad = 0.0174532925199;
+
+function gradientFromAngle(angle) {
+    return Math.tan(angle * toRad);
+}
+
+function linesForShape(angle, spacing, shape) {
+    //build lines at normal to line created from angle
+
+    angle %= 180;
+
+    var rect = shape.bounds;
+    
+    var start = rect.topLeft;
+    var oppositeCorner = rect.bottomRight;
+    
+    if (angle > 90) {
+        start = rect.bottomLeft;
+        oppositeCorner = rect.topRight;       
+    }
+
+
+    var toCorner = oppositeCorner.subtract(start);
+    var dir = new Point(Math.sin(angle * toRad), Math.cos(angle * toRad));
+    var angleBetween = dir.getAngleInRadians(toCorner);
+    var dirLength = toCorner.length * Math.cos(angleBetween);
+    var lineSide = dir.multiply(toCorner.length);
+
+    
+    // debugger;
+    var rectp = new Path.Rectangle(rect);
+    var lines = [];
+    var n = 0;
+    for (var i = spacing; i < dirLength; i+= spacing) {
+        var d = dir.multiply(i);
+        var point = start.add(d);
+        // var p = new Path.Circle(point, 3);
+        // p.fillColor = 'red';
+        // var l = lineAtPointWithAngle(p, angle + 90);
+
+        var q1 = point.add(lineSide).rotate(90, point);
+        var q2 = point.add(lineSide).rotate(-90, point);
+        
+        var l = new Path.Line(q1, q2);
+        lines.push(l);
+        // l.strokeColor = 'green';
+        // l.visible = false;
+
+        // var intersects = rectp.getIntersections(l);
+        // intersects = intersects.map(function(e) {
+        //     return e.point;
+        // }).sort(function(a, b) {
+        //     return a.y < b.y;
+        // });
+        // lines.push(new Path.Line(intersects[0], intersects[1]));
+
+
+        
+        // for (var j = 0; j < intersections.length; j++) {
+		//     // new Path.Circle({
+        //     //     center: intersections[j].point,
+        //     //     radius: 4,
+        //     //     strokeColor: '#000'
+        //     // });
+        //     var text = new PointText({
+        //         point: intersections[j].point,
+        //         content: "" + j,
+        //         fillColor: 'black',
+        //         fontFamily: 'Courier New',
+        //         fontWeight: 'bold',
+        //         fontSize: 15
+        //     });
+        // }
+    }
+   // var lines = linesForShape(60, shapes.get(0).outline);
+    return lines;
+}
+
+
+function parallelLinesForShape(angle, spacing, shape) {
+
+    var lines = linesForShape(angle, spacing, shape);
+    var points = [];
+    for (var i = 0; i < lines.length; i++) {
+        var intersections = shape.getIntersections(lines[i]);
+        if (intersections.length === 0) {
+            continue;
+        }
+        intersections = intersections.map(function(e) {
+            return e.point;
+        }).sort(function(a, b) {
+            return a.y < b.y;
+        });
+
+        if (i % 2 == 1) {
+            intersections.reverse();
+        }
+
+        console.log(intersections);
+        // points = points.concat(intersections);
+        points.push(intersections);
+    }
+
+    
+    // var points = linePointsForShape(angle, spacing, shape);
+    console.log(lines);
+    var lines = []
+    for (var i = 0; i < points.length; i++) {
+        var j = 0
+        // console.log(points[i].length);
+        for (; j < points[i].length-1; j+=2) {
+            lines.push(new Path.Line(points[i][j], points[i][j+1]));
+            // console.log("line");
+        }
+        if (i < points.length-1) {
+            var p1 = points[i][j-1];
+            var p2 = points[i+1][0];
+
+            if (p2.subtract(p1).length < alt) { //p1 && p2 && p1.x !== 0 && p1.y !== 0) {
+                // console.log(p2.subtract(p1).length);
+                lines.push(new Path.Line(p1, p2));
+                
+            }
+        }
+        // l.strokeColor = 'black';
+        
+    }
+ 
+    return lines;
+}
+
+function parallelLinesForShape2(angle, spacing, shape) {
+
+    var lines = linesForShape(angle, spacing, shape);
+    var points = [];
+    for (var i = 0; i < lines.length; i++) {
+        var intersections = shape.getIntersections(lines[i]);
+
+        intersections = intersections.map(function(e) {
+            return e.point;
+        }).sort(function(a, b) {
+            return a.y < b.y;
+        });
+
+        if (i % 2 == 1) {
+            intersections.reverse();
+        }
+
+        // console.log(points);
+        points = points.concat(intersections);
+    }
+
+    
+    // var points = linePointsForShape(angle, spacing, shape);
+    console.log(lines);
+    var lines = []
+    for (var i = 0; i < points.length; i+=2) {
+        lines.push(new Path.Line(points[i], points[i+1]));
+        // l.strokeColor = 'black';
+        
+    }
+ 
+    return lines;
+}
+
+function zigzagLinesForShape(angle, spacing, shape) {
+    // var points = linePointsForShape(angle, spacing, shape);
+    // var lines = []
+
+    var lines = linesForShape(angle, spacing, shape);
+    var points = [];
+    var retlines = [];
+    for (var i = 1; i < lines.length; i++) {
+        console.log(lines[i]);
+        var j = i % 2;
+        var k = (i + 1) % 2;
+        var line = new Path.Line(lines[i-1].segments[j].point, lines[i].segments[k].point);
+        // line.strokeColor = 'red';
+        var intersections = shape.getIntersections(line);
+
+        intersections = intersections.map(function(e) {
+            var p = new Path.Circle(e.point, 3);
+            // p.fillColor = 'green';
+        
+            return e.point;
+        }).sort(function(a, b) {
+            return a.y < b.y;
+        });
+
+        
+        if (i % 2 == 1) {
+            intersections.reverse();
+        }
+
+                // var p = new Path.Circle(point, 3);
+        // p.fillColor = 'red';
+        
+        // console.log(points);
+        retlines.push(new Path.Line(lines[i-1].segments[j].point, intersections[0]));
+        retlines.push(new Path.Line(intersections[intersections.length-1], lines[i].segments[k].point));
+        // points = points.concat(intersections);
+    }
+
+    // lines = [];
+    // for (var i = 0; i < points.length; i+=2) {
+    //     lines.push(new Path.Line(points[i], points[i+1]));
+    //     // l.strokeColor = 'black';
+        
+    // }
+ 
+    return retlines;
+}
+
+// var r = new Rectangle(new Point(200, 200), new Size(400, 200));
+// var rp = new Path.Rectangle(r);
+// rp.strokeColor = 'blue';
+// var lines = linePointsForShape(50, 10, rp);
+// for (var i = 0; i < lines.length; i+=2) {
+//     var l = new Path.Line(lines[i], lines[i+1]);
+//     l.strokeColor = 'black';
+
+// }
+// view.draw();
 
 function RingBuffer(size, banConsecutive) {
 
@@ -227,7 +475,7 @@ function numLines(type, size) {
 }
 
 function firstLine(type, size) {
-    var line = new ILine();
+    var line = new IndexLine();
     line.start = new Index(0, 1);
     if (type === 'H') {
         line.end = new Index(0, size.y  - size.y % 2 - 1);
@@ -349,7 +597,7 @@ function distanceToLine(point, line) {
 }
 
 function axisLine(type) {
-    var line = new ILine();
+    var line = new IndexLine();
     line.start = new Index(0, 1);
     if (type === 'H') {
         line.end = new Index(0, 3);
@@ -384,11 +632,24 @@ function drawAxes() {
     }
 }
 
-// drawAxes();
-var axes = getAxes();
 
-function yIndexFromSide(size) {
-    return size * 2 + 1;
+function interceptForEdge(edge) {
+    // technically not an intercept for H
+    // doesn't matter if we use start or end
+    var start = edge.start;
+    if (edge.type === "P") {
+        return (start.x + start.y - 1) / 2;
+    }
+    else if (edge.type === "N") {
+        return (start.y - start.x - 1) / 2;
+    }
+    else if (edge.type === "H") {
+        return start.x;
+    }
+}
+
+function yIndexFromSide(side) {
+    return side * 2 + 1;
 }
 
 
@@ -446,11 +707,14 @@ function worldToLocal(point, alt, axis) {
     return Math.floor(d/alt);
 }
 
+var axes = getAxes();
+
 function worldToTriple(point, alt) {
     // given a point in screen coords, 
     // and the altitude of the triangles
     // return index Triple
-    var axes = getAxes();
+    
+    // var axes = getAxes();
     return new Triple(
         worldToLocal(point, alt, axes.n),
         Math.abs(worldToLocal(point, alt, axes.p)),
@@ -865,6 +1129,7 @@ function makeOutline(perims, outline) {
 }
 
 
+
 function mergeLines(perims) {
     for (var i = 0; i < perims.length; i++) {
         var perim = perims[i];
@@ -909,24 +1174,52 @@ function TShape(idOrData, order) {
     
     this.outline = new CompoundPath({
         strokeColor: 'black',
+        visible: false,
     });
 
-    this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random());
+    this.lineGroup = new Group({
+        strokeColor: 'black',
+    });
 
+    this.linesConfig = {
+        spacing: Math.random()*5+2,
+        angle: Math.random()*180,
+    };
+
+    this.clearDrawing = function() {
+        this.outline.remove();
+        this.lineGroup.remove();
+    }
+    
+    // this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random());
+
+    this.lines = undefined;
+    this.makeLines = function(angle, spacing) {
+        // this.lines = zigzagLinesForShape(angle, spacing/1.5, this.outline);
+        this.lines = parallelLinesForShape(this.linesConfig.angle, this.linesConfig.spacing, this.outline);
+        this.lineGroup.removeChildren();
+        this.lineGroup.addChildren(this.lines);
+        this.lineGroup.strokeColor = "black";
+    }
+    
     this.draw = function(getMinOutline) {
         var outerEdges = getPerimeterEdges(this);
 
         var start = performance.now();
         var perim = pathFromPerimeterEdges(outerEdges, getMinOutline);
-        console.log("pathFromPerimeterEdges took " + (performance.now() - start) + "");
+
+        perim = mergeLines(perim);
+        makeOutline(perim, this.outline);
         
-        makeOutline(perim, this.outline);  
+        
+        this.makeLines(73, 6.1);
+        console.log("draw took " + (performance.now() - start) + "");
     };   
 
     this.mergeLines = function(getMinOutline) {
         var outerEdges = getPerimeterEdges(this);
         var perim = pathFromPerimeterEdges(outerEdges, getMinOutline);
-        perim = mergeLines(perim);
+        this.perim = mergeLines(perim);
         makeOutline(perim, this.outline);  
     };
 
@@ -1030,7 +1323,7 @@ function Shapes() {
     };
 
     this.remove = function(key) {
-        shapes[key].outline.remove();
+        shapes[key].clearDrawing();
         delete shapes[key];
         ui.updateShapes(this);
 
@@ -1092,7 +1385,7 @@ function Shapes() {
     
     this.loadState = function(obj) {
 
-        clear();
+        this.clear();
 
         for (var shapeId in obj) {
             shapes[shapeId] = new TShape(obj[shapeId]);
@@ -1165,11 +1458,15 @@ function Plot() {
         var paths = [];
         for (var i = 0; i < shapeIds.length; i++) {
             var shape = shapes.get(shapeIds[i]);
-            shape.mergeLines(true);
-            var lines = shape.outline.children;
-            for (var i = 0; i < lines.length; i++) {
-                paths.push(lines[i].segments);
+            
+            if (shape.outline.visible) {
+                shape.mergeLines(true);
+                var outlines = shape.outline.children;
+                for (var i = 0; i < outlines.length; i++) {
+                    paths.push(outlines[i].segments);
+                }
             }
+            paths = paths.concat(shape.lineGroup.children.map(function(e) { return e.segments }));
         }
 
         var req = $.ajax({
@@ -1386,8 +1683,16 @@ function KeyComboHandler() {
         return sorted(keys).join("+");
     }
 
-    this.add = function(keys, obj, func) {
-        combos[makeKeyComboId(keys)] = function() { obj[func].apply(obj); };
+    this.add = function(keys, objOrFunc, funcname) {
+        var func = undefined;
+        if (typeof(objOrFunc) === 'function') {
+            func = objOrFunc;
+        }
+        else {
+            func = function() { objOrFunc[funcname].apply(objOrFunc); };
+        }
+        
+        combos[makeKeyComboId(keys)] = func;
     };
 
     this.call = function(event) {
@@ -1793,6 +2098,23 @@ keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invok
 keyHandler.add(["command", "z"], invoker, "undo"); //function() { invoker.undo(); });
 keyHandler.add(["command", "p"], plot, "all")
 keyHandler.add(["command", "shift", "p"], plot, "selected");
+
+keyHandler.add(["command", "m"], function() {
+    // console.log(shapes.shapeIds());
+    shapes.shapeIds().forEach(function(id) {
+        shapes.get(id).mergeLines();
+    });
+});
+
+// keyHandler.add(["command", "l"], function() {
+//     var lines = linesForShape(60, shapes.get(0).outline);
+//     for (var i = 0; i < lines.length; i+=2) {
+//         var l = new Path.Line(lines[i], lines[i+1]);
+//         l.strokeColor = 'black';
+        
+//     }
+//     console.log(lines);
+// });
 
 var action = new Action(invoker, keyHandler);
 
