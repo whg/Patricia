@@ -2,14 +2,16 @@
 from __future__ import print_function
 
 import sys
-
+import serial
+import json
+    
 
 # if len(sys.argv) < 2:
 #     print("no file to print")
 
 
     
-def digital2Real(p):
+def digital2real(p):
     """
     Takes a point from paper.js's system, which looks like:
     ['Segment', 415.69219, 330]
@@ -22,22 +24,29 @@ def digital2Real(p):
     y = 10320 - (p[2] * mult)
     return x, y
 
-
-try:
-    with open(sys.argv[1], 'r') as f:
-        import serial
-        import json
+# class Plotter(object):
+#     def __init__(self):
+#         self.se = serial.Serial('/dev/cu.usbserial')
+    
+def plot(se, data):
+    # with open(sys.argv[1], 'r') as f:
         
-        se = serial.Serial('/dev/cu.usbserial')
+        # se = serial.Serial('/dev/cu.usbserial')
 
-        paths = json.loads(f.read())
+    paths = json.loads(data)
 
-        for path in paths:
-            se.write("PU%d,%d;" % digital2Real(path[0]))
-            for p in path:
-                # se.write("PD%d,%d;" % (p[1]*10, p[2]*10))
-                se.write("PD%d,%d;" % digital2Real(p))
+    for path in paths:
+        se.write("PU%d,%d;" % digital2real(path[0]))
+        for p in path:
+            # se.write("PD%d,%d;" % (p[1]*10, p[2]*10))
+            se.write("PD%d,%d;" % digital2real(p))
 
-        se.write("PU")
-except IndexError:
-    print("no file to print")
+    se.write("PU;")
+
+    
+
+# if __name__ == '__main__':
+#     try:
+#         plotfile(sys.argv[1])
+#     except IndexError:
+#         print("no file to print")

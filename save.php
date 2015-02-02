@@ -10,6 +10,6 @@ chmod($filepath, 0755);
 echo($filepath);
 
 if ($folder == "plots") {
-    exec(dirname(__FILE__) . "/plot.py $filepath");
+    exec(dirname(__FILE__) . "/plot.py $filepath &");
 }
 ?>

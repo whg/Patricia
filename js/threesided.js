@@ -1049,11 +1049,12 @@ function Shapes() {
     };
 
     this.shapeIds = function() {
-        var ret = {};
-        for (var id in shapes) {
-            ret[id] = id;
-        }
-        return ret;
+        // var ret = {};
+        // for (var id in shapes) {
+        //     ret[id] = id;
+        // }
+        // return ret;
+        return Object.keys(shapes);
     };
 
     this.highestFromArray = function(arr) {
@@ -1099,31 +1100,6 @@ function Shapes() {
         }
     };
     
-    this.plot = function() {
-        console.log("plotting");
-        var paths = [];
-        for (var shapeId in shapes) {
-            var shape = shapes[shapeId];
-            shape.mergeLines(true);
-            var lines = shape.outline.children;
-            for (var i = 0; i < lines.length; i++) {
-                paths.push(lines[i].segments);
-            }
-        }
-
-        var req = $.ajax({
-            url: "save.php",
-            type: "POST",
-            data: {
-                "data": JSON.stringify(paths),
-                "folder": "plots",
-            },
-        }).done(function(filepath) {
-
-            console.log("sent file to plot");
-        });
-
-    };
 
     this.removeOutside = function(db, invertedIndex) {
         for (var shapeId in shapes) {
@@ -1171,6 +1147,51 @@ function UI() {
         }
     }
 
+    return this;
+}
+
+function Plot() {
+
+    this.all = function() {
+        this.plotShapeIds(shapes.shapeIds());
+    };
+
+    this.selected = function() {
+        this.plotShapeIds(Object.keys(current.selected._values));
+    }
+    
+    this.plotShapeIds = function(shapeIds) {
+        console.log("plotting");
+        var paths = [];
+        for (var i = 0; i < shapeIds.length; i++) {
+            var shape = shapes.get(shapeIds[i]);
+            shape.mergeLines(true);
+            var lines = shape.outline.children;
+            for (var i = 0; i < lines.length; i++) {
+                paths.push(lines[i].segments);
+            }
+        }
+
+        var req = $.ajax({
+            url: "http://localhost:5000/plot/",
+            type: "POST",
+            // dataType: "json",
+            crossDomain: true,
+            data: {
+                "data": JSON.stringify(paths),
+            },
+        }).done(function(data) {
+
+            console.log("sent file to plot, returned: " + data);
+        }).fail(function(xhr, status, et) {
+        console.log("plot failed");
+        console.log(xhr.responseText);
+        console.log(et);
+        console.log(status);
+    });
+
+    };
+    
     return this;
 }
 
@@ -1514,7 +1535,7 @@ function Action(invoker, keyHandler) {
 
         current.triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
 
-        if (!modifierStates["shift"]) {
+        if (!modifierStates["shift"] && invertedIndex.at(current.triple.id) === undefined) {
             current.selected.clear();
         }
 
@@ -1749,6 +1770,8 @@ var db = {}; //createDatabase(new Size(nx, ny));
 var invertedIndex = new InvertedIndex;
 var shapes = new Shapes();
 var ui = new UI();
+var plot = new Plot();
+
 var current = {
     triple: null,
     shape: null,
@@ -1768,8 +1791,8 @@ var invoker = new Invoker();
 var keyHandler = new KeyComboHandler();
 keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invoker.redo(); });
 keyHandler.add(["command", "z"], invoker, "undo"); //function() { invoker.undo(); });
-keyHandler.add(["command", "p"], shapes, "plot");
-
+keyHandler.add(["command", "p"], plot, "all")
+keyHandler.add(["command", "shift", "p"], plot, "selected");
 
 var action = new Action(invoker, keyHandler);
 
@@ -1808,21 +1831,27 @@ $("#download").click(function(e) {
     
     var anchor = $(this);
     var req = $.ajax({
-        url: "save.php",
-        async: false,
+        url: "http://localhost:5000/save/",
+        // async: false,
         type: "POST",
+        dataType: "json",
+        crossDomain: true,
         data: {
             "data": JSON.stringify(data),
-            "folder": "saves",
         },
-    }).done(function(filepath) {
+    }).done(function(data) {
 
-        anchor.attr("href", filepath);
-        var parts = filepath.split("/");
-        anchor.attr("download", parts[parts.length-1]);
-
+        window.location = "http://127.0.0.1:5000/download/" + data.fileid;
+        
+    }).fail(function(xhr, status, et) {
+        console.log("save failed");
+        console.log(xhr.responseText);
+        console.log(et);
+        console.log(status);
     });
 
+    e.preventDefault();
+    return false;
 });
 
 
@@ -1837,8 +1866,9 @@ function loadState(obj) {
     console.log(obj);
 
     shapes.loadState(JSON.parse(obj));
-    for (var shapeId in shapes.shapeIds()) {
-        invertedIndex.addShape(shapes.get(shapeId));
+    var shapeIds = shapes.shapeIds();
+    for (var i = 0; i < shapeIds.length; i++) {
+        invertedIndex.addShape(shapes.get(shapeIds[i]));
     }
     ui.updateShapes(shapes);
 }
@@ -1864,3 +1894,14 @@ $("#trianglesize").on("mousemove",function(e){
 });
 
 $("#slider").slider();
+
+// $.ajax({ //my ajax request
+//         url: "http://localhost:5000",
+//         type: "POST",
+//         cache: false,
+//         dataType: "json",
+//         crossDomain: true,
+//         data: { "a": "asdf", },
+// }).done(function(data) {
+//     console.log("done with data: " + data);
+// }).fail(function(xhr, status, et) { console.log("failed"); console.log(xhr.responseText); console.log(et); console.log(status); });
