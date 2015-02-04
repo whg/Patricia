@@ -48,8 +48,13 @@ input[type="file"] {
 }
 
 #shapes {
+  $titlesize: 16px;
   li {
     list-style: none;
+  }
+
+  span {
+    font-size: $titlesize;
   }
 
   .shape-details {
@@ -59,6 +64,7 @@ input[type="file"] {
 
   input {
     font-family: Menlo;
+    font-size: $titlesize - 2px;
   }
 
   .title form {
@@ -81,7 +87,7 @@ $arrow-colour: #444;
   width: 0; 
   height: 0;
   margin: 1px;
-  margin-left: 4px;
+  margin-left: 10px;
 //  /* margin-right: 5px;
   border-top: $arrow-width solid transparent;
   border-bottom: $arrow-width solid transparent;	
@@ -94,7 +100,7 @@ $arrow-colour: #444;
   border-right: $arrow-width solid transparent;	
   border-top: $arrow-height solid $arrow-colour;
   margin-bottom: -4px;
-  margin-left: 2px;
+  margin-left: 8px;
 }
 
 .shape {

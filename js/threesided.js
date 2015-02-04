@@ -1442,30 +1442,20 @@ function UI() {
 
 
     $("#shapes").on('submit','form.setname',function(e){
-        // console.log($(this).parents("li").attr("key"));
-        // // console.log(e);
-        // console.log($(this).find("input[type=text]").val());
-        // var input = $(this).find("input[type=text]").val();
-        // var shapeId = $(this).parents("li").attr("key");
-        // shapes.get(shapeId).name = input;
-        // $(this).parents("li").find("span").text(input);
         var arrow = $(this).siblings(".arrow");
         toggleDetails(arrow);
         e.preventDefault();
     });
 
     $("#shapes").on("input", ".title", function(e){
-        // console.log($(this).parents("li"));
-        // console.log(e);
-        // console.log($(this).find("input[type=text]").val());
         var input = $(this).find("input[type=text]").val();
-        // console.log(input);
         var shapeId = $(this).parents("li").attr("key");
-        // console.log(shapeId);
+
         shapes.get(shapeId).name = input;
         $(this).parents("li").find("span").text(input);
-        // e.preventDefault();
     });
+
+
 
     function toggleDetails(arrow) {
         arrow.toggleClass("arrow-down");
@@ -1473,11 +1463,31 @@ function UI() {
         arrow.siblings("form").find("input").toggle();
         arrow.parent().next().toggle();
     }
+
+    function update(e) {
+        console.log("updating: " + this);
+    }
+
+    $("#shapes").on("mousedown", "input[type=range]", function(e){
+        console.log(this);
+        console.log("bind");
+        $(this).bind("mousemove", update);
+    });
+
+    $("#shapes").on("mouseup", "input[type=range]", function(e){
+        console.log("unbind");
+        $(this).unbind("mousemove", update);
+    });
     
     $("#shapes").on("click", ".arrow", function() {
-        // var arrow = $(this).find(".arrow");
         toggleDetails($(this));
     });
+
+    $("#shapes").on("change", "input, select", function() {
+        // toggleDetails($(this));
+        // console.log(this);
+    });
+    
     
     this.updateShapes = function(shapes) {
         var ids = shapes.keysInOrder();

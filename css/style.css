@@ -39,11 +39,14 @@ input[type="file"] {
 
 #shapes li {
   list-style: none; }
+#shapes span {
+  font-size: 16px; }
 #shapes .shape-details {
   display: none;
   font-size: 12px; }
 #shapes input {
-  font-family: Menlo; }
+  font-family: Menlo;
+  font-size: 14px; }
 #shapes .title form {
   display: inline; }
   #shapes .title form input {
@@ -54,7 +57,7 @@ input[type="file"] {
   width: 0;
   height: 0;
   margin: 1px;
-  margin-left: 4px;
+  margin-left: 10px;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
   border-left: 8px solid #444; }
@@ -64,7 +67,7 @@ input[type="file"] {
   border-right: 5px solid transparent;
   border-top: 8px solid #444;
   margin-bottom: -4px;
-  margin-left: 2px; }
+  margin-left: 8px; }
 
 .shape {
   background: #fff; }
