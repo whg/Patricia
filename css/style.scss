@@ -22,10 +22,10 @@ body {
 
 #messages {
     height: 250px;
-}
 
-#messages p {
-    margin: 2px;
+    p {
+        margin: 2px;
+    }
 }
 
 .grabbable {
@@ -45,4 +45,22 @@ body {
 input[type="file"] {
 
     /* opacity: 0; */
+}
+  
+.arrow-down {
+    display: inline-block;
+	width: 0; 
+	height: 0; 
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;	
+	border-top: 8px solid #f00;
+}
+
+.arrow-down {
+    display: inline-block;
+	width: 0; 
+	height: 0; 
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;	
+	border-top: 8px solid #f00;
 }

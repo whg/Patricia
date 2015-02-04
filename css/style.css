@@ -1,0 +1,56 @@
+body {
+  background: #ddd;
+  font-family: Menlo; }
+
+#canvas {
+  background: white;
+  width: 800px;
+  height: 600px;
+  float: left; }
+
+#sidebar {
+  float: left;
+  margin: 10px;
+  /* height: 300px; */ }
+
+/* #shapes { */
+/*     margin-top: 350px; */
+/* } */
+#messages {
+  height: 250px; }
+  #messages p {
+    margin: 2px; }
+
+.grabbable {
+  cursor: move;
+  /* fallback if grab cursor is unsupported */
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab; }
+
+/* (Optional) Apply a "closed-hand" cursor during drag operation. */
+.grabbable:active {
+  cursor: grabbing;
+  cursor: -moz-grabbing;
+  cursor: -webkit-grabbing; }
+
+input[type="file"] {
+  /* opacity: 0; */ }
+
+.arrow-down {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 8px solid #f00; }
+
+.arrow-down {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 8px solid #f00; }
+
+/*# sourceMappingURL=style.css.map */
