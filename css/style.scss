@@ -47,6 +47,31 @@ input[type="file"] {
     /* opacity: 0; */
 }
 
+#shapes {
+  li {
+    list-style: none;
+  }
+
+  .shape-details {
+    display: none;
+    font-size: 12px;
+  }
+
+  input {
+    font-family: Menlo;
+  }
+
+  .title form {
+    display: inline;
+
+    input {
+      display: none;
+    }
+  }
+}
+
+
+
 $arrow-width: 5px;
 $arrow-height: 8px;
 $arrow-colour: #444;
@@ -57,6 +82,7 @@ $arrow-colour: #444;
   height: 0;
   margin: 1px;
   margin-left: 4px;
+//  /* margin-right: 5px;
   border-top: $arrow-width solid transparent;
   border-bottom: $arrow-width solid transparent;	
   border-left: $arrow-height solid $arrow-colour;
@@ -67,7 +93,7 @@ $arrow-colour: #444;
   border-left: $arrow-width solid transparent;
   border-right: $arrow-width solid transparent;	
   border-top: $arrow-height solid $arrow-colour;
-  margin: -4px;
+  margin-bottom: -4px;
   margin-left: 2px;
 }
 

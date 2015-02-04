@@ -37,6 +37,18 @@ body {
 input[type="file"] {
   /* opacity: 0; */ }
 
+#shapes li {
+  list-style: none; }
+#shapes .shape-details {
+  display: none;
+  font-size: 12px; }
+#shapes input {
+  font-family: Menlo; }
+#shapes .title form {
+  display: inline; }
+  #shapes .title form input {
+    display: none; }
+
 .arrow, .arrow-down {
   display: inline-block;
   width: 0;
@@ -51,7 +63,7 @@ input[type="file"] {
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
   border-top: 8px solid #444;
-  margin: -4px;
+  margin-bottom: -4px;
   margin-left: 2px; }
 
 .shape {

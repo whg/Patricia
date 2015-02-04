@@ -1421,12 +1421,9 @@ function UI() {
     function addShape(shape) {
         $("#shapes").append(shapeDiv(shape));
         $("#shapes li:last-child").find("span").text(shape.name);
+        $("#shapes li:last-child").find("input[type=text]").val(shape.name);
         $("#shapes li:last-child").attr("key", shape.id);
-    // $("#shapes li:last-child").on("click", function() {
-    //     var arrow = $(this).find(".arrow");
-    //     arrow.toggleClass("arrow-down");
-    //         // console.log();
-    //     });
+
 
         // $("#shapes li:last-child").on("dblclick", function() {
         // // var arrow = $(this);
@@ -1445,14 +1442,41 @@ function UI() {
 
 
     $("#shapes").on('submit','form.setname',function(e){
-        console.log($(this).parents("li").attr("key"));
+        // console.log($(this).parents("li").attr("key"));
+        // // console.log(e);
+        // console.log($(this).find("input[type=text]").val());
+        // var input = $(this).find("input[type=text]").val();
+        // var shapeId = $(this).parents("li").attr("key");
+        // shapes.get(shapeId).name = input;
+        // $(this).parents("li").find("span").text(input);
+        var arrow = $(this).siblings(".arrow");
+        toggleDetails(arrow);
+        e.preventDefault();
+    });
+
+    $("#shapes").on("input", ".title", function(e){
+        // console.log($(this).parents("li"));
         // console.log(e);
-        console.log($(this).find("input[type=text]").val());
+        // console.log($(this).find("input[type=text]").val());
         var input = $(this).find("input[type=text]").val();
+        // console.log(input);
         var shapeId = $(this).parents("li").attr("key");
+        // console.log(shapeId);
         shapes.get(shapeId).name = input;
         $(this).parents("li").find("span").text(input);
-        e.preventDefault();
+        // e.preventDefault();
+    });
+
+    function toggleDetails(arrow) {
+        arrow.toggleClass("arrow-down");
+        arrow.siblings("span").toggle();
+        arrow.siblings("form").find("input").toggle();
+        arrow.parent().next().toggle();
+    }
+    
+    $("#shapes").on("click", ".arrow", function() {
+        // var arrow = $(this).find(".arrow");
+        toggleDetails($(this));
     });
     
     this.updateShapes = function(shapes) {
