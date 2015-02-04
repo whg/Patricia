@@ -1160,9 +1160,11 @@ function TShape(idOrData, order) {
         strokeColor: 'black',
     });
 
-    this.linesConfig = {
+    this.appearence = {
         spacing: Math.random()*5+2,
         angle: Math.random()*180,
+        type: "outline",
+        colour: 1,
     };
 
     this.clearDrawing = function() {
@@ -1173,9 +1175,9 @@ function TShape(idOrData, order) {
     // this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random());
 
     this.lines = undefined;
-    this.makeLines = function(angle, spacing) {
+    this.makeLines = function() {
         // this.lines = zigzagLinesForShape(angle, spacing/1.5, this.outline);
-        this.lines = parallelLinesForShape(this.linesConfig.angle, this.linesConfig.spacing, this.outline);
+        this.lines = parallelLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
         this.lineGroup.removeChildren();
         this.lineGroup.addChildren(this.lines);
         this.lineGroup.strokeColor = "black";
@@ -1191,7 +1193,7 @@ function TShape(idOrData, order) {
         makeOutline(perim, this.outline);
         
         
-        this.makeLines(73, 6.1);
+        this.makeLines();
         console.log("draw took " + (performance.now() - start) + "");
     };   
 
@@ -1297,15 +1299,17 @@ function Shapes() {
     };
 
     this.add = function(key) {
-        shapes[key] = new TShape(key, Object.keys(shapes).length);
+        var shape = new TShape(key, Object.keys(shapes).length);
+        shapes[key] = shape;
         // shapes[key].outline.setLayer(layer);
-        ui.updateShapes(this);
+        ui.addShape(shape);
     };
 
     this.remove = function(key) {
         shapes[key].clearDrawing();
+        ui.removeShape(key);
         delete shapes[key];
-        ui.updateShapes(this);
+        // ui.updateShapes(this);
 
     };
 
@@ -1418,7 +1422,7 @@ function UI() {
 // <span>Shape ' + shape.id + '</span><div class="arrow arrow-down"></div></div></li>';
     }
 
-    function addShape(shape) {
+    this.addShape = function(shape) {
         $("#shapes").append(shapeDiv(shape));
         $("#shapes li:last-child").find("span").text(shape.name);
         $("#shapes li:last-child").find("input[type=text]").val(shape.name);
@@ -1436,7 +1440,18 @@ function UI() {
         //     console.log("asdf");
         // });        
 
+    };
+
+    this.removeShape = function(shapeId) {
+        var q = $("#shapes").find("li[key=" + shapeId + "]");
+        q.remove();
+        console.log(q);
     }
+
+    var selectedShape = false;
+    this.setCurrentShape = function(shape) {
+        currentExpandedShape = shape;
+    };
 
     // $("#shapes").on("click", "")
 
@@ -1453,6 +1468,7 @@ function UI() {
 
         shapes.get(shapeId).name = input;
         $(this).parents("li").find("span").text(input);
+        console.log(e);
     });
 
 
@@ -1461,42 +1477,59 @@ function UI() {
         arrow.toggleClass("arrow-down");
         arrow.siblings("span").toggle();
         arrow.siblings("form").find("input").toggle();
-        arrow.parent().next().toggle();
+
+        var details = arrow.parent().next();
+        
+        details.toggle();
+
+        // if (details.css("display") !== "none") {
+        //     selectedShape = $(this).parents("li").attr("key");
+        // }
+        // else {
+        //     selectedShape = undefined;
+        // }
     }
 
-    function update(e) {
-        console.log("updating: " + this);
+    function inputRangeUpdate(e) {
+        console.log("updating: " + $(this).val());
+        var name = $(this).attr("name");
+        var value = $(this).val();
+        var shapeId = parseInt($(this).parents("li").attr("key"));
+        shapes.get(shapeId).appearence[name] = value;
     }
 
     $("#shapes").on("mousedown", "input[type=range]", function(e){
         console.log(this);
         console.log("bind");
-        $(this).bind("mousemove", update);
+        $(this).bind("mousemove", inputRangeUpdate);
     });
 
     $("#shapes").on("mouseup", "input[type=range]", function(e){
         console.log("unbind");
-        $(this).unbind("mousemove", update);
+        $(this).unbind("mousemove", inputRangeUpdate);
     });
     
     $("#shapes").on("click", ".arrow", function() {
         toggleDetails($(this));
     });
 
-    $("#shapes").on("change", "input, select", function() {
+    $("#shapes").on("change", "select", function() {
         // toggleDetails($(this));
-        // console.log(this);
+        var name = $(this).attr("name");
+        var value = $(this).val();
+        var shapeId = $(this).parents("li").attr("key");
+        console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
     });
     
     
-    this.updateShapes = function(shapes) {
-        var ids = shapes.keysInOrder();
-        $("#shapes").html("");
-        for (var i = 0, shape = null; i < ids.length; i++) {
-            shape = shapes.get(ids[i]);
-            addShape(shape);
-        }
-    }
+    // this.updateShapes = function(shapes) {
+    //     var ids = shapes.keysInOrder();
+    //     $("#shapes").html("");
+    //     for (var i = 0, shape = null; i < ids.length; i++) {
+    //         shape = shapes.get(ids[i]);
+    //         addShape(shape);
+    //     }
+    // }
 
     return this;
 }
@@ -1866,6 +1899,7 @@ function Action(invoker, keyHandler) {
             }
             current.selected.add(sid);            
             current.triple = triple;
+            current.shape = sid;
         }
     }
 
@@ -2068,10 +2102,6 @@ function Action(invoker, keyHandler) {
 
 
         
-        if(event.key == "backspace") {
-            return false;
-        }
-
         return ret; // might be false in which caaase don't do what you normally do
     }
 
@@ -2150,20 +2180,40 @@ var shapes = new Shapes();
 var ui = new UI();
 var plot = new Plot();
 
-var current = {
-    triple: null,
-    shape: null,
-    selected: new Set(),
-    triangleSize: 50,
-};
+function Current() {
+    this.triple = null;
+    var shape = null;
+    this.selected = new Set();
+    this.triangleSize = 50;
 
-current.selected.removecb = function(shapeId) {
-    shapes.get(shapeId).outline.selected = false;
-};
+    Object.defineProperty(this, 'shape', {
+        get: function() {
+            console.log("getting shape");
+            return shape;
+            // return current.shape;
+        },
+        set: function(v) {
+            console.log("setting shape");
+            ui.setCurrentShape(v);
+            shape = v;
+        },
+        configurable: true,
+    });
 
-current.selected.addcb = function(shapeId) {
-    shapes.get(shapeId).outline.selected = true;
-};
+    this.selected.removecb = function(shapeId) {
+        shapes.get(shapeId).outline.selected = false;
+    };
+
+    this.selected.addcb = function(shapeId) {
+        shapes.get(shapeId).outline.selected = true;
+    };
+
+    return this;
+}
+
+var current = new Current();
+
+
 
 var invoker = new Invoker();
 var keyHandler = new KeyComboHandler();
@@ -2265,7 +2315,7 @@ function loadState(obj) {
     for (var i = 0; i < shapeIds.length; i++) {
         invertedIndex.addShape(shapes.get(shapeIds[i]));
     }
-    ui.updateShapes(shapes);
+    // ui.updateShapes(shapes);
 }
 
 $("input:file").change(function (){

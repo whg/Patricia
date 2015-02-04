@@ -75,27 +75,50 @@
           </div>
           <div class="shape-details">
             <table>
+              
+
+              <tr>
+                <td>Colour:</td>
+                <td>
+                  <select name="colour">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                  </select>
+                </td>
+              </tr>
+
+
               <tr>
                 <td>Type:</td>
                 <td>
-                  <select>
-                    <option value="volvo">Volvo</option>
-                    <option value="saab">Saab</option>
-                    <option value="mercedes">Mercedes</option>
-                    <option value="audi">Audi</option>
+                  <select name="type">
+                    <option value="outline">Outline</option>
+                    <option value="hatch">Hatch</option>
+                    <option value="offset">Offset</option>
+                    <!-- <option value="audi">Audi</option> -->
                   </select>
 
                 </td>
               </tr>
-
               <tr>
-                <td>Param:</td>
+                <td>Spacing:</td>
                 <td>
-                  <input type="range" name="trianglesize" min="10" max="100" value="50">
-
+                  <input type="range" name="spacing" min="2" max="30" value="50">
                 </td>
               </tr>
-              
+              <tr>
+                <td>Angle:</td>
+                <td>
+                  <input type="range" name="angle" min="-90" max="90" value="50">
+                </td>
+              </tr>
+
 
             </table>
           </div>
@@ -109,4 +132,3 @@
 </body>
 </html>
 
-line type
