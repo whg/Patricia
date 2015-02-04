@@ -1864,10 +1864,9 @@ function Action(invoker, keyHandler) {
                 }
 
             }
-            
+            current.selected.add(sid);            
             current.triple = triple;
         }
-        
     }
 
 
@@ -1903,9 +1902,20 @@ function Action(invoker, keyHandler) {
 
         current.triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
 
-        if (!modifierStates["shift"] && invertedIndex.at(current.triple.id) === undefined) {
-            current.selected.clear();
-        }
+
+        // console.log(event);
+        // if (event.type === "mousedown") {
+        //     var shapeundermouse = shapes.highestFromArray(invertedIndex.at(current.triple.id));
+        //     console.log("shape under = " + shapeundermouse);
+        //     console.log("selected = " + current.selected.values());
+        //     if (!modifierStates["shift"] ||
+        //         !current.selected.has(shapeundermouse)) {
+        //         // invertedIndex.at(current.triple.id) === undefined) {
+        //         console.log("Clearned");
+        //         current.selected.clear();
+        //     }
+        //     // return;
+        // }
 
         // make the marque
         
@@ -1977,10 +1987,10 @@ function Action(invoker, keyHandler) {
     var modes = {
         "v": createMouseMode(none, none, pan, zoom, none),
         "a": createMouseMode(none, findShape, addTriangle, pan, none),
-        "s": createMouseMode(none, marqueShapes, marqueShapes, none, marqueShapesUp),
+        "s": createMouseMode(none, selectShapes, marqueShapes, none, marqueShapesUp),
         "option": createMouseMode(none, none, pan, zoom, none),
         "d": createMouseMode(none, findShape, removeTriangle, pan, none),
-        "m": createMouseMode(none, marqueShapes, moveShapes, none, none),
+        "m": createMouseMode(none, selectShapes, moveShapes, none, none),
         "e": createMouseMode(none, eraseTriangle, eraseTriangle, none, none),
     };
 
