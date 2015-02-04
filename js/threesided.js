@@ -257,34 +257,23 @@ function parallelLinesForShape(angle, spacing, shape) {
         if (i % 2 == 1) {
             intersections.reverse();
         }
-
-        console.log(intersections);
-        // points = points.concat(intersections);
         points.push(intersections);
     }
 
-    
-    // var points = linePointsForShape(angle, spacing, shape);
-    console.log(lines);
-    var lines = []
+    lines = []
     for (var i = 0; i < points.length; i++) {
         var j = 0
-        // console.log(points[i].length);
         for (; j < points[i].length-1; j+=2) {
             lines.push(new Path.Line(points[i][j], points[i][j+1]));
-            // console.log("line");
         }
         if (i < points.length-1) {
             var p1 = points[i][j-1];
             var p2 = points[i+1][0];
 
-            if (p2.subtract(p1).length < alt) { //p1 && p2 && p1.x !== 0 && p1.y !== 0) {
-                // console.log(p2.subtract(p1).length);
-                lines.push(new Path.Line(p1, p2));
-                
+            if (p2.subtract(p1).length < alt) {
+                lines.push(new Path.Line(p1, p2));                
             }
         }
-        // l.strokeColor = 'black';
         
     }
  
@@ -363,26 +352,10 @@ function zigzagLinesForShape(angle, spacing, shape) {
         // points = points.concat(intersections);
     }
 
-    // lines = [];
-    // for (var i = 0; i < points.length; i+=2) {
-    //     lines.push(new Path.Line(points[i], points[i+1]));
-    //     // l.strokeColor = 'black';
-        
-    // }
  
     return retlines;
 }
 
-// var r = new Rectangle(new Point(200, 200), new Size(400, 200));
-// var rp = new Path.Rectangle(r);
-// rp.strokeColor = 'blue';
-// var lines = linePointsForShape(50, 10, rp);
-// for (var i = 0; i < lines.length; i+=2) {
-//     var l = new Path.Line(lines[i], lines[i+1]);
-//     l.strokeColor = 'black';
-
-// }
-// view.draw();
 
 function RingBuffer(size, banConsecutive) {
 
@@ -1147,7 +1120,7 @@ function mergeLines(perims) {
             }
         }
         edges.push(edge);
-        console.log(edges);
+        // console.log(edges);
         perims[i] = edges;
     }
     return perims;
@@ -1171,6 +1144,10 @@ function TShape(idOrData, order) {
         }
         this._values
     }
+
+    // var needsDraw = true;
+    // this.addcb = function() { needsDraw = true; };
+    // this.removecb = function() { needsDraw = true; };
     
     this.outline = new CompoundPath({
         strokeColor: 'black',
@@ -1378,7 +1355,7 @@ function Shapes() {
 
     this.clear = function() {
         for (var key in shapes) {
-            delete shapes[key];
+            this.remove(key);
         }
         shapes = {};
     };
@@ -1662,6 +1639,11 @@ function Invoker() {
             commands[pos++].execute();
         }
     };
+
+    this.clear = function() {
+        commands = [];
+        pos = 0;
+    }
 }
 
 function KeyComboHandler() {
@@ -2201,6 +2183,8 @@ $("input:file").change(function (){
     var fileReader = new FileReader();
     fileReader.onload = function(event) {
         loadState(event.target.result);
+        invoker.clear();
+        view.draw();
     };
 
     fileReader.readAsText(file);
