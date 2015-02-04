@@ -240,7 +240,7 @@ function linesForShape(angle, spacing, shape) {
 
 
 function parallelLinesForShape(angle, spacing, shape) {
-
+    console.log("spacing = " + spacing);
     var lines = linesForShape(angle, spacing, shape);
     var points = [];
     for (var i = 0; i < lines.length; i++) {
@@ -1178,6 +1178,7 @@ function TShape(idOrData, order) {
     this.makeLines = function() {
         // this.lines = zigzagLinesForShape(angle, spacing/1.5, this.outline);
         this.lines = parallelLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
+        // console.log(this.lines);
         this.lineGroup.removeChildren();
         this.lineGroup.addChildren(this.lines);
         this.lineGroup.strokeColor = "black";
@@ -1493,9 +1494,12 @@ function UI() {
     function inputRangeUpdate(e) {
         console.log("updating: " + $(this).val());
         var name = $(this).attr("name");
-        var value = $(this).val();
+        var value = parseInt($(this).val());
         var shapeId = parseInt($(this).parents("li").attr("key"));
         shapes.get(shapeId).appearence[name] = value;
+        console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
+        shapes.get(shapeId).draw();
+        view.draw();
     }
 
     $("#shapes").on("mousedown", "input[type=range]", function(e){
