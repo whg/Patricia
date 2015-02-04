@@ -66,10 +66,15 @@ if __name__ == '__main__':
     # try:
         # se = serial.Serial('/dev/cu.usbserial')
         # se.write("SP2;")
-    plotter = Plotter()
+    useplot = False
+    try:
+        plotter = Plotter()
+        useplot = True
+    except OSError:
+        print("No plotter found, going without.")
+        
     app.run(debug=True)
 
-# finally:
-    plotter.close()
-    # del se
-    print "closed serial, hopefully"
+    if useplot:
+        plotter.close()
+        print "closed serial, hopefully"
