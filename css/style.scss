@@ -46,21 +46,36 @@ input[type="file"] {
 
     /* opacity: 0; */
 }
-  
-.arrow-down {
-    display: inline-block;
-	width: 0; 
-	height: 0; 
-	border-left: 5px solid transparent;
-	border-right: 5px solid transparent;	
-	border-top: 8px solid #f00;
+
+$arrow-width: 5px;
+$arrow-height: 8px;
+$arrow-colour: #444;
+
+.arrow {
+  display: inline-block;
+  width: 0; 
+  height: 0;
+  margin: 1px;
+  margin-left: 4px;
+  border-top: $arrow-width solid transparent;
+  border-bottom: $arrow-width solid transparent;	
+  border-left: $arrow-height solid $arrow-colour;
 }
 
 .arrow-down {
-    display: inline-block;
-	width: 0; 
-	height: 0; 
-	border-left: 5px solid transparent;
-	border-right: 5px solid transparent;	
-	border-top: 8px solid #f00;
+  @extend .arrow;
+  border-left: $arrow-width solid transparent;
+  border-right: $arrow-width solid transparent;	
+  border-top: $arrow-height solid $arrow-colour;
+  margin: -4px;
+  margin-left: 2px;
+}
+
+.shape {
+  background: #fff;
+}
+  
+.shape-details {
+  margin: 5px;
+//  background: #f00;
 }

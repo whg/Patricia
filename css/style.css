@@ -37,20 +37,27 @@ body {
 input[type="file"] {
   /* opacity: 0; */ }
 
-.arrow-down {
+.arrow, .arrow-down {
   display: inline-block;
   width: 0;
   height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 8px solid #f00; }
+  margin: 1px;
+  margin-left: 4px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid #444; }
 
 .arrow-down {
-  display: inline-block;
-  width: 0;
-  height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 8px solid #f00; }
+  border-top: 8px solid #444;
+  margin: -4px;
+  margin-left: 2px; }
+
+.shape {
+  background: #fff; }
+
+.shape-details {
+  margin: 5px; }
 
 /*# sourceMappingURL=style.css.map */

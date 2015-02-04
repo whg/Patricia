@@ -1134,10 +1134,12 @@ function TShape(idOrData, order) {
     if (idOrData.triples === undefined) {
         this.id = idOrData;
         this.order = order; //Object.keys(shapes).length;
+        this.name = "Shape " + this.id;
     }
     else {
         this.id = idOrData.id;
         this.order = idOrData.order;
+        this.name = idOrData.name;
         var triples = idOrData.triples;
         for (var i = 0, l = triples.length; i < l; i++) {
             this.add(new Triple(triples[i]));
@@ -1205,6 +1207,7 @@ function TShape(idOrData, order) {
             "triples": Object.keys(this._values),
             "id": this.id,
             "order": this.order,
+            "name": this.name,
         };
     };
 
@@ -1406,14 +1409,58 @@ function UI() {
             
         }
     });
-  
+
+    var template = $("#shapes").html();
+    
+    function shapeDiv(shape) {
+        return template;
+    //     return '<li key="' + shape.id + '"><div>\
+// <span>Shape ' + shape.id + '</span><div class="arrow arrow-down"></div></div></li>';
+    }
+
+    function addShape(shape) {
+        $("#shapes").append(shapeDiv(shape));
+        $("#shapes li:last-child").find("span").text(shape.name);
+        $("#shapes li:last-child").attr("key", shape.id);
+    // $("#shapes li:last-child").on("click", function() {
+    //     var arrow = $(this).find(".arrow");
+    //     arrow.toggleClass("arrow-down");
+    //         // console.log();
+    //     });
+
+        // $("#shapes li:last-child").on("dblclick", function() {
+        // // var arrow = $(this);
+        // // arrow.toggleClass("arrow-down");
+        //     console.log("double asdf");
+        // });        
+        // $("#shapes li:last-child").on("click", function() {
+        // // var arrow = $(this);
+        // // arrow.toggleClass("arrow-down");
+        //     console.log("asdf");
+        // });        
+
+    }
+
+    // $("#shapes").on("click", "")
+
+
+    $("#shapes").on('submit','form.setname',function(e){
+        console.log($(this).parents("li").attr("key"));
+        // console.log(e);
+        console.log($(this).find("input[type=text]").val());
+        var input = $(this).find("input[type=text]").val();
+        var shapeId = $(this).parents("li").attr("key");
+        shapes.get(shapeId).name = input;
+        $(this).parents("li").find("span").text(input);
+        e.preventDefault();
+    });
     
     this.updateShapes = function(shapes) {
         var ids = shapes.keysInOrder();
         $("#shapes").html("");
         for (var i = 0, shape = null; i < ids.length; i++) {
             shape = shapes.get(ids[i]);
-            $("#shapes").append("<li key='" + shape.id + "'>Shape " + shape.id + "</li>");
+            addShape(shape);
         }
     }
 
