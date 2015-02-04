@@ -239,10 +239,11 @@ function linesForShape(angle, spacing, shape) {
 }
 
 
-function parallelLinesForShape(angle, spacing, shape) {
-    console.log("spacing = " + spacing);
+function joinedHatchLinesForShape(angle, spacing, shape) {
+
     var lines = linesForShape(angle, spacing, shape);
     var points = [];
+
     for (var i = 0; i < lines.length; i++) {
         var intersections = shape.getIntersections(lines[i]);
         if (intersections.length === 0) {
@@ -280,7 +281,7 @@ function parallelLinesForShape(angle, spacing, shape) {
     return lines;
 }
 
-function parallelLinesForShape2(angle, spacing, shape) {
+function hatchLinesForShape(angle, spacing, shape) {
 
     var lines = linesForShape(angle, spacing, shape);
     var points = [];
@@ -297,12 +298,9 @@ function parallelLinesForShape2(angle, spacing, shape) {
             intersections.reverse();
         }
 
-        // console.log(points);
         points = points.concat(intersections);
     }
 
-    
-    // var points = linePointsForShape(angle, spacing, shape);
     console.log(lines);
     var lines = []
     for (var i = 0; i < points.length; i+=2) {
@@ -1163,7 +1161,7 @@ function TShape(idOrData, order) {
     this.appearence = {
         spacing: Math.random()*5+2,
         angle: Math.random()*180,
-        type: "outline",
+        style: "outline",
         colour: 1,
     };
 
@@ -1177,7 +1175,7 @@ function TShape(idOrData, order) {
     this.lines = undefined;
     this.makeLines = function() {
         // this.lines = zigzagLinesForShape(angle, spacing/1.5, this.outline);
-        this.lines = parallelLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
+        this.lines = hatchLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
         // console.log(this.lines);
         this.lineGroup.removeChildren();
         this.lineGroup.addChildren(this.lines);
@@ -1289,7 +1287,7 @@ function Shapes() {
     var shapes = {};
     this.layer = new Group();
 
-    var ids = 0;
+    var ids = 1;
     this.nextId = function() {
         return ids++;
     };
@@ -1417,18 +1415,18 @@ function UI() {
 
     var template = $("#shapes").html();
     
-    function shapeDiv(shape) {
-        return template;
-    //     return '<li key="' + shape.id + '"><div>\
-// <span>Shape ' + shape.id + '</span><div class="arrow arrow-down"></div></div></li>';
-    }
 
     this.addShape = function(shape) {
-        $("#shapes").append(shapeDiv(shape));
-        $("#shapes li:last-child").find("span").text(shape.name);
-        $("#shapes li:last-child").find("input[type=text]").val(shape.name);
-        $("#shapes li:last-child").attr("key", shape.id);
-
+        $("#shapes").append(template);
+        var added =  $("#shapes li:last-child");
+        
+        added.find("span").text(shape.name);
+        added.find("input[type=text]").val(shape.name);
+        added.attr("key", shape.id);
+        
+        // update values of sliders
+        added.find("input[name=spacing]").val(shape.appearence.spacing);
+        added.find("input[name=angle]").val(shape.appearence.angle);
 
         // $("#shapes li:last-child").on("dblclick", function() {
         // // var arrow = $(this);
@@ -1443,15 +1441,25 @@ function UI() {
 
     };
 
-    this.removeShape = function(shapeId) {
-        var q = $("#shapes").find("li[key=" + shapeId + "]");
-        q.remove();
-        console.log(q);
+    function getItem(shapeId) {
+        return $("#shapes").find("li[key=" + shapeId + "]");
     }
 
-    var selectedShape = false;
-    this.setCurrentShape = function(shape) {
-        currentExpandedShape = shape;
+    this.removeShape = function(shapeId) {
+        getItem(shapeId).remove();
+    }
+
+    var currentExpandedShape = false;
+    this.setCurrentShape = function(shapeId) {
+        if (currentExpandedShape) {
+            var li = getItem(currentExpandedShape).find("div");
+            li.css("background", "#fff");
+        }
+        var li = getItem(shapeId).find("div");
+        li.css("background", "#faa");
+        currentExpandedShape = shapeId;
+        console.log("shapeId = " + shapeId);
+        console.log(li);
     };
 
     // $("#shapes").on("click", "")
@@ -1845,13 +1853,17 @@ function Action(invoker, keyHandler) {
         if (!isValidTriple(triple)) {
             return;
         }
+
         current.triple = triple;
         current.shape = shapes.highestFromArray(invertedIndex.at(current.triple.id));
 
         if (current.shape === undefined) {
-            current.shape = shapes.nextId();
+            var shapeId = shapes.nextId();
 
-            invoker.push(CreateTriangleAction, "forward", [current.triple, current.shape]);
+            invoker.push(CreateTriangleAction, "forward", [current.triple, shapeId]);
+
+            //do this after so we can update the ui
+            current.shape = shapeId;
         }
 
         
