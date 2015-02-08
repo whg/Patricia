@@ -1,6 +1,7 @@
 
 * TODO [#A] plot only single line
 
+* TODO backspace delete shape
 * TODO only 8 colours
 * TODO set pens to plot with
 choose colour of each pen
@@ -10,8 +11,6 @@ shapes array/holder. this is so undo deleting shapes works a bit
 nicer. will work fine as shape id are not reused.
 
 use a bucket type of thing
-* TODO make grid transparent
-sometime
 * TODO copy and paste
 CLOCK: [2015-01-29 Thu 23:02]--[2015-02-04 Wed 23:02] => 144:00
 
@@ -20,6 +19,9 @@ CLOCK: [2015-01-29 Thu 23:02]--[2015-02-04 Wed 23:02] => 144:00
 * TODO merge shapes (into one colour)
 * TODO layers
 so you can move shapes off the main grid
+* DONE make grid transparent
+CLOSED: [2015-02-08 Sun 01:37]
+sometime
 * DONE activate regions to plot
 CLOSED: [2015-02-02 Mon 11:24]
 * DONE throttle data to plotter

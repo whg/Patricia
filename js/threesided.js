@@ -301,7 +301,7 @@ function hatchLinesForShape(angle, spacing, shape) {
         points = points.concat(intersections);
     }
 
-    console.log(lines);
+    // console.log(lines);
     var lines = []
     for (var i = 0; i < points.length; i+=2) {
         lines.push(new Path.Line(points[i], points[i+1]));
@@ -1151,7 +1151,7 @@ function TShape(idOrData, order) {
     
     this.outline = new CompoundPath({
         strokeColor: 'black',
-        visible: false,
+        // visible: false,
     });
 
     this.lineGroup = new Group({
@@ -1192,7 +1192,7 @@ function TShape(idOrData, order) {
         makeOutline(perim, this.outline);
         
         
-        this.makeLines();
+        // this.makeLines();
         console.log("draw took " + (performance.now() - start) + "");
     };   
 
@@ -1450,16 +1450,20 @@ function UI() {
     }
 
     var currentExpandedShape = false;
+    function highlightDiv(div, highlight) {
+        div.css("border-left", "4px solid " + (highlight ? "#3da55e" : "#fff"));
+    }
     this.setCurrentShape = function(shapeId) {
         if (currentExpandedShape) {
-            var li = getItem(currentExpandedShape).find("div");
-            li.css("background", "#fff");
+            var div = getItem(currentExpandedShape).find("div.shape");
+            highlightDiv(div, false);
         }
-        var li = getItem(shapeId).find("div");
-        li.css("background", "#faa");
+        var div = getItem(shapeId).find("div.shape");
+        highlightDiv(div, true);
+        // li.css("background", "#faa");
         currentExpandedShape = shapeId;
-        console.log("shapeId = " + shapeId);
-        console.log(li);
+        // console.log("shapeId = " + shapeId);
+        console.log(div);
     };
 
     // $("#shapes").on("click", "")
@@ -2257,8 +2261,8 @@ keyHandler.add(["command", "m"], function() {
 
 var action = new Action(invoker, keyHandler);
 
-setTriangleSize($("#trianglesize").val());
-
+setTriangleSize($("#gridsize").val());
+gridGroup.strokeColor = new Color($("#gridcolour").val() * 0.01);
 view.draw();
 
 /*
@@ -2348,7 +2352,7 @@ $("input:file").change(function (){
 });
 
 
-$("#trianglesize").on("mousemove",function(e){
+$("#gridsize").on("mousemove",function(e){
     // console.log();
     var newsize = $(this).val();
     if (newsize !== current.triangleSize) {
@@ -2356,7 +2360,15 @@ $("#trianglesize").on("mousemove",function(e){
     }
 });
 
-$("#slider").slider();
+$("#gridcolour").on("mousemove",function(e){
+    // console.log();
+    console.log(gridGroup.strokeColor);
+    gridGroup.strokeColor = new Color($(this).val() * 0.01);
+    view.draw();
+
+});
+
+// $("#slider").slider();
 
 // $.ajax({ //my ajax request
 //         url: "http://localhost:5000",
