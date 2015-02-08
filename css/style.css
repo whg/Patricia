@@ -17,6 +17,7 @@ body {
 /*     margin-top: 350px; */
 /* } */
 #messages {
+  display: none;
   height: 250px; }
   #messages p {
     margin: 2px; }
@@ -39,6 +40,8 @@ input[type="file"] {
 
 #shapes li {
   list-style: none; }
+#shapes .shape {
+  border-left: 4px solid #fff; }
 #shapes span {
   font-size: 16px; }
 #shapes .shape-details {
@@ -57,7 +60,7 @@ input[type="file"] {
   width: 0;
   height: 0;
   margin: 1px;
-  margin-left: 10px;
+  margin-left: 6px;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
   border-left: 8px solid #444; }
@@ -67,7 +70,7 @@ input[type="file"] {
   border-right: 5px solid transparent;
   border-top: 8px solid #444;
   margin-bottom: -4px;
-  margin-left: 8px; }
+  margin-left: 4px; }
 
 .shape {
   background: #fff; }

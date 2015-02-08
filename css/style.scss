@@ -21,6 +21,7 @@ body {
 /* } */
 
 #messages {
+  display: none;
     height: 250px;
 
     p {
@@ -51,6 +52,10 @@ input[type="file"] {
   $titlesize: 16px;
   li {
     list-style: none;
+  }
+
+  .shape {
+    border-left: 4px solid #fff;
   }
 
   span {
@@ -87,7 +92,7 @@ $arrow-colour: #444;
   width: 0; 
   height: 0;
   margin: 1px;
-  margin-left: 10px;
+  margin-left: 6px;
 //  /* margin-right: 5px;
   border-top: $arrow-width solid transparent;
   border-bottom: $arrow-width solid transparent;	
@@ -100,7 +105,7 @@ $arrow-colour: #444;
   border-right: $arrow-width solid transparent;	
   border-top: $arrow-height solid $arrow-colour;
   margin-bottom: -4px;
-  margin-left: 8px;
+  margin-left: 4px;
 }
 
 .shape {
