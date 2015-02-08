@@ -19,6 +19,7 @@ CLOCK: [2015-01-29 Thu 23:02]--[2015-02-04 Wed 23:02] => 144:00
 * TODO merge shapes (into one colour)
 * TODO layers
 so you can move shapes off the main grid
+* TODO rasterise objects when not editing
 * DONE make grid transparent
 CLOSED: [2015-02-08 Sun 01:37]
 sometime

@@ -1174,8 +1174,24 @@ function TShape(idOrData, order) {
 
     this.lines = undefined;
     this.makeLines = function() {
+
+        console.log("in makelines, style = " + this.appearence.style);
+        if (this.appearence.style === "outline") {
+            return;
+        }
+        else {
+            this.outline.visible = false;    
+        }
+        
+        if (this.appearence.style === "hatch") {
+            this.lines = hatchLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
+        }
+        else if (this.appearence.style === "joinedhatch") {
+            this.lines = joinedHatchLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
+        }
+        
         // this.lines = zigzagLinesForShape(angle, spacing/1.5, this.outline);
-        this.lines = hatchLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
+        
         // console.log(this.lines);
         this.lineGroup.removeChildren();
         this.lineGroup.addChildren(this.lines);
@@ -1192,7 +1208,7 @@ function TShape(idOrData, order) {
         makeOutline(perim, this.outline);
         
         
-        // this.makeLines();
+        this.makeLines();
         console.log("draw took " + (performance.now() - start) + "");
     };   
 
@@ -1534,6 +1550,12 @@ function UI() {
         var name = $(this).attr("name");
         var value = $(this).val();
         var shapeId = $(this).parents("li").attr("key");
+        if (name === "style") {
+            shapes.get(shapeId).appearence.style = value;
+            console.log("sett " + value + " --- " + shapes.get(shapeId).appearence.style);
+            shapes.get(shapeId).draw();
+            view.draw();
+        }
         console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
     });
     
