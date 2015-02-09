@@ -196,52 +196,21 @@ function linesForShape(angle, spacing, shape) {
     var lineSide = dir.multiply(toCorner.length);
 
     
-    // debugger;
     var rectp = new Path.Rectangle(rect);
     var lines = [];
     var n = 0;
     for (var i = spacing; i < dirLength; i+= spacing) {
         var d = dir.multiply(i);
         var point = start.add(d);
-        // var p = new Path.Circle(point, 3);
-        // p.fillColor = 'red';
-        // var l = lineAtPointWithAngle(p, angle + 90);
 
         var q1 = point.add(lineSide).rotate(90, point);
         var q2 = point.add(lineSide).rotate(-90, point);
         
         var l = new Path.Line(q1, q2);
         lines.push(l);
-        // l.strokeColor = 'green';
-        // l.visible = false;
 
-        // var intersects = rectp.getIntersections(l);
-        // intersects = intersects.map(function(e) {
-        //     return e.point;
-        // }).sort(function(a, b) {
-        //     return a.y < b.y;
-        // });
-        // lines.push(new Path.Line(intersects[0], intersects[1]));
-
-
-        
-        // for (var j = 0; j < intersections.length; j++) {
-		//     // new Path.Circle({
-        //     //     center: intersections[j].point,
-        //     //     radius: 4,
-        //     //     strokeColor: '#000'
-        //     // });
-        //     var text = new PointText({
-        //         point: intersections[j].point,
-        //         content: "" + j,
-        //         fillColor: 'black',
-        //         fontFamily: 'Courier New',
-        //         fontWeight: 'bold',
-        //         fontSize: 15
-        //     });
-        // }
     }
-   // var lines = linesForShape(60, shapes.get(0).outline);
+
     return lines;
 }
 
@@ -2047,11 +2016,11 @@ function Action(invoker, keyHandler) {
     var modes = {
         "v": createMouseMode(none, none, pan, zoom, none),
         "a": createMouseMode(none, findShape, addTriangle, pan, none),
-        "s": createMouseMode(none, selectShapes, marqueShapes, none, marqueShapesUp),
+        "s": createMouseMode(none, selectShapes, marqueShapes, pan, marqueShapesUp),
         "option": createMouseMode(none, none, pan, zoom, none),
         "d": createMouseMode(none, findShape, removeTriangle, pan, none),
-        "m": createMouseMode(none, selectShapes, moveShapes, none, none),
-        "e": createMouseMode(none, eraseTriangle, eraseTriangle, none, none),
+        "m": createMouseMode(none, selectShapes, moveShapes, pan, none),
+        "e": createMouseMode(none, eraseTriangle, eraseTriangle, pan, none),
     };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
