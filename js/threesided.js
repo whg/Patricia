@@ -6,8 +6,15 @@ var sqrt3 = Math.sqrt(3);
 
 
 var Index = Point;
+
+function zeropad(number, length) {
+    var s = String(number);
+    var npad = Math.max(0, length - s.length + 1);
+    return Array(npad).join("0") + s;
+}
+
 Index.prototype.toString = function() {
-    return this.x + "," + this.y;
+    return zeropad(this.x, 2) + "," + zeropad(this.y, 2);
 }
 
 function Triple(nOrTripleOrData, p, h) {
@@ -871,34 +878,6 @@ function getPerimeterEdges(pntSet) {
     return outerEdges;
 }
 
-function cartesianProduct(paramArray) {
-
-  function addTo(curr, args) {
-
-    var i, copy, 
-        rest = args.slice(1),
-        last = !rest.length,
-        result = [];
-
-    for (i = 0; i < args[0].length; i++) {
-
-      copy = curr.slice();
-      copy.push(args[0][i]);
-
-      if (last) {
-        result.push(copy);
-
-      } else {
-        result = result.concat(addTo(copy, rest));
-      }
-    }
-
-    return result;
-  }
-
-
-  return addTo([], Array.prototype.slice.call(arguments));
-}
 
 function cartesianProductOf() {
   return Array.prototype.reduce.call(arguments, function(a, b) {
@@ -1006,12 +985,14 @@ function pathFromPerimeterEdges(edges, getMin) {
         var perims = [];
         do {
             var sortedStarts = sorted(Object.keys(starts.data));
-            if (sortedStarts.length === 0) {
-                break;
-            }
+            console.log(sortedStarts);
+
+            // if (sortedStarts.length === 0) {
+            //     break;
+            // }
             
             var firstEdge = starts.data[sortedStarts[0]][0];
-
+            console.log(firstEdge.id);
             var nextEdge;
             var prevEdge = starts.popIndex(firstEdge.start)
             var perim = [prevEdge];
@@ -1025,7 +1006,7 @@ function pathFromPerimeterEdges(edges, getMin) {
 
             perims.push(perim);
 
-        } while (q++ < 1000);
+        } while (Object.keys(starts.data).length !== 0);
 
         return perims;
     }
@@ -1103,8 +1084,11 @@ function makeOutline(perims, outline) {
 
 function mergeLines(perims) {
     for (var i = 0; i < perims.length; i++) {
+
         var perim = perims[i];
         var edge = perim[0].clone();
+        console.log(perim);
+        console.log(perim[0].id);
         var edges = [];
         for (var j = 1; j < perim.length; j++) {
             if (perim[j].type === perim[j-1].type) {
@@ -2304,7 +2288,7 @@ it's 30% slower to do the constant slicing on getPerimiter, but it can haldle ho
 */
 
 function wm(m) {
-    $("#messages").append("<p>"+m+"</p>");
+    $("#messages").append("<p>" + m + "</p>");
     if ($("#messages p").length > 10) {
         $('#messages p:lt(2)').remove();
     }
