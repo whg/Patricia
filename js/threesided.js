@@ -1029,7 +1029,9 @@ function pathFromPerimeterEdges(edges, getMin) {
 
 function makeOutline(perims, outline) {
     var perim = perims[0];
-    if (perim.length === 0) return;
+    if (perim.length === 0) {
+        return;
+    }
 
     outline.removeChildren();
     for (var i = 0; i < perims.length; i++) {
@@ -1046,13 +1048,13 @@ function makeOutline(perims, outline) {
 }
 
 
-
 function mergeLines(perims) {
     for (var i = 0; i < perims.length; i++) {
 
         var perim = perims[i];
-        var edge = perim[0].clone();
+        var edge = perim[0].clone();        
         var edges = [];
+        
         for (var j = 1; j < perim.length; j++) {
             if (perim[j].line.type === perim[j-1].line.type) {
                 // edgesToRemove.push(j);
@@ -1071,8 +1073,56 @@ function mergeLines(perims) {
     return perims;
 }
 
-function filterDuplicateLines() {
+function filterDuplicateLines(shapeIds) {
+    // we don't want to redraw lines
+    // here we 
+    var db = [];
+    for (var i = 1; i < 9; i++) {
+        db[i] = new Set();
+    }
     
+    for (var i = 0; i < shapeIds.length; i++) {
+        var shape = shapes.get(shapeIds[i]);
+        var perims = shape.getPerims();
+        var pen = shape.appearence.outline;
+        var newperims = [];
+        for (var j = 0; j < perims.length; j++) {
+            var np = [];
+            var k = 0;
+            do {
+                edge = perims[j][k++];
+            } while(db[pen].has(edge.id) && k < perims[j].length);
+
+            db[pen].add(edge.id);
+            np.push(edge);
+            // console.log("pushed at k = " + k);
+            for (; k < perims[j].length; k++) {
+                edge = perims[j][k];
+                if (db[pen].has(edge.id)) {
+                    if (np.length !== 0) {
+                        newperims.push(np);
+                        np = [];
+                    }
+                    // continue;
+                }
+                else {
+                    np.push(edge);
+                    db[pen].add(edge.id);
+                }
+                
+                console.log(edge.line.type + "," + edge.line.val + " -> " + edge.id);
+            }
+            if (np.length !== 0){
+                newperims.push(np);
+            }
+        }
+        // console.log(newperims);
+        // console.log(JSON.stringify(newperims[0].map(function(e) { return e.id;} )));
+        makeOutline(mergeLines(newperims), shape.outline);
+        // shape.outline.removeChildren();
+    }
+
+    view.draw();
 }
 
 function sortIntoPens(shapeIds) {
@@ -1142,6 +1192,7 @@ function TShape(idOrData, order) {
 
     this.fill = new Group({
         strokeColor: 'black',
+        visible: false,
     });
 
     this.appearence = {
@@ -1193,21 +1244,27 @@ function TShape(idOrData, order) {
         this.fill.addChildren(this.lines);
         this.fill.strokeColor = "black";
     }
-    
-    this.draw = function(getMinOutline) {
+
+    this.getPerims = function(getMinOutline) {
         var outerEdges = getPerimeterEdges(this);
 
-        var start = performance.now();
-        var perim = pathFromPerimeterEdges(outerEdges, getMinOutline);
+        // var start = performance.now();
+        var perims = pathFromPerimeterEdges(outerEdges, getMinOutline);
+        return perims;
+    };
+    
+    this.draw = function(getMinOutline) {
+        // console.log(perim[0]);
+        // console.log(perim[0].map(function(e) { return JSON.stringify(e.line); }));
 
-        perim = mergeLines(perim);
-        console.log(perim[0]);
-        console.log(perim[0].map(function(e) { return JSON.stringify(e.line); }));
-        makeOutline(perim, this.outline);
+        var perims = this.getPerims(getMinOutline);
+        this.perims = mergeLines(perims);
+        
+        makeOutline(this.perims, this.outline);
         
         this.makeLines();
         
-        console.log("draw took " + (performance.now() - start) + "");
+        // console.log("draw took " + (performance.now() - start) + "");
     };   
 
     this.mergeLines = function(getMinOutline) {
@@ -1593,6 +1650,8 @@ function Plot() {
         //     paths = paths.concat(shape.fill.children.map(function(e) { return e.segments }));
         // }
 
+        filterDuplicateLines(shapeIds);
+        
         var data = sortIntoPens(shapeIds);
         console.log("data = " + data);
         var req = $.ajax({

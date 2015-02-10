@@ -1,25 +1,27 @@
 
-* TODO [#A] plot only single line
 
 * TODO backspace delete shape
 * TODO only 8 colours
-* TODO set pens to plot with
-choose colour of each pen
-* TODO choose colour of shapes
-colours should be kept in another data structure other than the
-shapes array/holder. this is so undo deleting shapes works a bit
-nicer. will work fine as shape id are not reused.
-
-use a bucket type of thing
 * TODO copy and paste
-CLOCK: [2015-01-29 Thu 23:02]--[2015-02-04 Wed 23:02] => 144:00
-
 * TODO rotate
 * TODO better modes for operation
 * TODO merge shapes (into one colour)
 * TODO layers
 so you can move shapes off the main grid
 * TODO rasterise objects when not editing
+* DONE [#A] plot only single line
+CLOSED: [2015-02-10 Tue 15:21]
+done for different colours
+* DONE choose colour of shapes
+CLOSED: [2015-02-10 Tue 15:21]
+colours should be kept in another data structure other than the
+shapes array/holder. this is so undo deleting shapes works a bit
+nicer. will work fine as shape id are not reused.
+
+use a bucket type of thing
+* DONE set pens to plot with
+CLOSED: [2015-02-10 Tue 13:21]
+choose colour of each pen
 * DONE make grid transparent
 CLOSED: [2015-02-08 Sun 01:37]
 sometime
