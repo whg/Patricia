@@ -34,16 +34,18 @@ def digital2real(p):
 
 
 def paper2hpgl(paperjson):
-    paths = json.loads(paperjson)
+    data = json.loads(paperjson)
     comms = []
-    for path in paths:
-        comms.append("PU%d,%d;" % digital2real(path[0]))
-        for p in path:
-            comms.append("PD%d,%d;" % digital2real(p))
+    for pen, paths in data.items():
+        comms.append("SP%s;" % pen)
+        for path in paths:
+            comms.append("PU%d,%d;" % digital2real(path[0]))
+            for p in path:
+                comms.append("PD%d,%d;" % digital2real(p))
             
-    comms.append("PU;")
+            comms.append("PU;")
 
-    return "".join(comms)
+    return str("".join(comms))
 
 class Plotter(object):
     def __init__(self):
@@ -62,7 +64,6 @@ class Plotter(object):
     
     def plot(self, data):
         hpgl = paper2hpgl(data)
-
         self.device.write(hpgl)
         # call flush() to wait till all data is written before exiting...
         self.device._serial_port.flush()

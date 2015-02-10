@@ -105,10 +105,13 @@ function mergeObjects() {
     return r;
 }
 
-function Edge(start, end, type) {
+function Edge(start, end, typeVal) {
     this.start = start;
     this.end = end;
-    this.type = type;
+    this.line = {
+        type: typeVal[0],
+        val: typeVal[1]
+    };
     
     //create an id where the start and the end doesn't matter
     this.getId = function () {
@@ -117,7 +120,7 @@ function Edge(start, end, type) {
     }
 
     this.clone = function() {
-        return new Edge(this.start, this.end, this.type);
+        return new Edge(this.start, this.end, [this.line.type, this.line.val]);
     }
 
     this.toString = function() {
@@ -140,7 +143,6 @@ for(var i = 0; i < things.length; i++) {
 function IndexLine(startIndex, endIndex) {
     this.start = startIndex;
     this.end = endIndex;
-    return this;
 }
 
 function Line(m, c) {
@@ -158,8 +160,6 @@ function Line(m, c) {
         return new Point((y - this.c) / this.m, y);
     };
 
-    
-    return this;
 }
 
 function lineAtPointWithAngle(point, angle) {
@@ -296,7 +296,7 @@ function zigzagLinesForShape(angle, spacing, shape) {
     var points = [];
     var retlines = [];
     for (var i = 1; i < lines.length; i++) {
-        console.log(lines[i]);
+        // console.log(lines[i]);
         var j = i % 2;
         var k = (i + 1) % 2;
         var line = new Path.Line(lines[i-1].segments[j].point, lines[i].segments[k].point);
@@ -343,14 +343,14 @@ function RingBuffer(size, banConsecutive) {
         this.pos++;
         this.pos%= this.size;
         return true;
-    }
+    };
     
     this.pushNoConsecutive = function(v) {
         if (v == this.peek()) {
             return false;
         }
         return this.pushBasic(v);
-    }
+    };
     
     if (banConsecutive) {
         this.push = this.pushNoConsecutive;
@@ -362,7 +362,7 @@ function RingBuffer(size, banConsecutive) {
     this.peek = function() {
         var i = (this.pos - 1 + this.size) % this.size;
         return this.values[i];
-    }
+    };
     
     this.pop = function() {   
         if (this.pos == 0) {
@@ -372,8 +372,7 @@ function RingBuffer(size, banConsecutive) {
         var ret = this.values[this.pos];
         this.values[this.pos] = undefined;
         return ret;
-    }
-    return this;
+    };
 }
 
 
@@ -729,7 +728,6 @@ function Set() {
         return "Set( " + this.values().join(', ') + " )";
     };
 
-    return this;
 }
 
 function SetWithUniverse(universe) {
@@ -756,7 +754,6 @@ function SetWithUniverse(universe) {
         return false;
     };
     
-    return this;
 }
 
 
@@ -791,9 +788,9 @@ function createTriangle(triple, vertices) {
         "id": triple.id,
         "vertices": vertices,
         "edges": [
-            new Edge(vertices[0], vertices[1], dir == 'F' ? 'N' : 'P'),
-            new Edge(vertices[1], vertices[2], dir == 'F' ? 'P' : 'H'),
-            new Edge(vertices[2], vertices[0], dir == 'F' ? 'H' : 'N'),
+            new Edge(vertices[0], vertices[1], dir == 'F' ? ['N', triple.n] : ['P', triple.p]),
+            new Edge(vertices[1], vertices[2], dir == 'F' ? ['P', triple.p+1] : ['H', triple.h + 1]),
+            new Edge(vertices[2], vertices[0], dir == 'F' ? ['H', triple.h] : ['N', triple.n + 1]),
         ],
     }
 }
@@ -954,14 +951,13 @@ function pathFromPerimeterEdges(edges, getMin) {
         var perims = [];
         do {
             var sortedStarts = sorted(Object.keys(starts.data));
-            console.log(sortedStarts);
 
             // if (sortedStarts.length === 0) {
             //     break;
             // }
             
             var firstEdge = starts.data[sortedStarts[0]][0];
-            console.log(firstEdge.id);
+
             var nextEdge;
             var prevEdge = starts.popIndex(firstEdge.start)
             var perim = [prevEdge];
@@ -1056,11 +1052,9 @@ function mergeLines(perims) {
 
         var perim = perims[i];
         var edge = perim[0].clone();
-        console.log(perim);
-        console.log(perim[0].id);
         var edges = [];
         for (var j = 1; j < perim.length; j++) {
-            if (perim[j].type === perim[j-1].type) {
+            if (perim[j].line.type === perim[j-1].line.type) {
                 // edgesToRemove.push(j);
                 // edges.push(perim[j-1]);
                 edge.end = perim[j].end;
@@ -1077,6 +1071,45 @@ function mergeLines(perims) {
     return perims;
 }
 
+function filterDuplicateLines() {
+    
+}
+
+function sortIntoPens(shapeIds) {
+    var pens = {};
+    for (var i = 1; i < 9; i++) {
+        pens[i] = [];
+    }
+    
+    for (var i = 0; i < shapeIds.length; i++) {
+        var shape = shapes.get(shapeIds[i]);
+        if (shape.outline.visible) {
+            var outlines = shape.outline.children;
+            var outlinepen = shape.appearence.outline;
+            console.log(outlines);
+            // debugger;
+            for (var j = 0; j < outlines.length; j++) {
+                pens[outlinepen].push(outlines[j].segments);
+            }
+        }
+
+        if (shape.fill.visible) {
+            var fillpen = shape.appearence.fill;
+            var lines = shape.fill.children.map(function(e) {
+                return e.segments;
+            });
+            pens[fillpen] = pens[fillpen].concat(lines);
+        }
+    }
+
+    for (var i = 1; i < 9; i++) {
+        if (pens[i].length === 0) {
+            delete pens[i];
+        }
+    }
+    
+    return pens;
+}
 
 function TShape(idOrData, order) {
 
@@ -1107,48 +1140,58 @@ function TShape(idOrData, order) {
         // visible: false,
     });
 
-    this.lineGroup = new Group({
+    this.fill = new Group({
         strokeColor: 'black',
     });
 
     this.appearence = {
         spacing: Math.random()*5+2,
         angle: Math.random()*180,
-        style: "outline",
-        colour: 1,
+        filltype: "hatch",
+        _fill: 1,
+        _outline: 1,
     };
+    var that = this;
+    Object.defineProperty(this.appearence, "fill", {
+        set: function(v) {
+            that.fill.visible = v !== "none";
+            console.log("fill set");
+            this._fill = v;
+        },
+        get: function() {
+            return this._fill;
+        }
+    });
+
+    Object.defineProperty(this.appearence, "outline", {
+        set: function(v) {
+            console.log("outline set");
+            that.outline.visible = v !== "none";
+            this._outline = v;
+        },
+        get: function() {
+            return this._outline;
+        }
+    });
 
     this.clearDrawing = function() {
         this.outline.remove();
-        this.lineGroup.remove();
+        this.fill.remove();
     }
     
-    // this.outline.fillColor = new Color(Math.random(), Math.random(), Math.random());
-
     this.lines = undefined;
     this.makeLines = function() {
-
-        console.log("in makelines, style = " + this.appearence.style);
-        if (this.appearence.style === "outline") {
-            return;
-        }
-        else {
-            this.outline.visible = false;    
-        }
         
-        if (this.appearence.style === "hatch") {
+        if (this.appearence.filltype === "hatch") {
             this.lines = hatchLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
         }
-        else if (this.appearence.style === "joinedhatch") {
+        else if (this.appearence.filltype === "joinedhatch") {
             this.lines = joinedHatchLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
         }
         
-        // this.lines = zigzagLinesForShape(angle, spacing/1.5, this.outline);
-        
-        // console.log(this.lines);
-        this.lineGroup.removeChildren();
-        this.lineGroup.addChildren(this.lines);
-        this.lineGroup.strokeColor = "black";
+        this.fill.removeChildren();
+        this.fill.addChildren(this.lines);
+        this.fill.strokeColor = "black";
     }
     
     this.draw = function(getMinOutline) {
@@ -1158,10 +1201,12 @@ function TShape(idOrData, order) {
         var perim = pathFromPerimeterEdges(outerEdges, getMinOutline);
 
         perim = mergeLines(perim);
+        console.log(perim[0]);
+        console.log(perim[0].map(function(e) { return JSON.stringify(e.line); }));
         makeOutline(perim, this.outline);
         
-        
         this.makeLines();
+        
         console.log("draw took " + (performance.now() - start) + "");
     };   
 
@@ -1188,9 +1233,7 @@ function TShape(idOrData, order) {
     //     var perim = pathFromPerimeterEdges(outerEdges);
     //     perim = mergeLines(perim);
     //     makeOutline(perim, this.outline);
-    // };
-    
-    return this;
+    // }
 }
 
 
@@ -1359,7 +1402,6 @@ function Shapes() {
         }
     };
     
-    return this;
 }
 
 
@@ -1432,7 +1474,7 @@ function UI() {
         // li.css("background", "#faa");
         currentExpandedShape = shapeId;
         // console.log("shapeId = " + shapeId);
-        console.log(div);
+        // console.log(div);
     };
 
     // $("#shapes").on("click", "")
@@ -1450,7 +1492,7 @@ function UI() {
 
         shapes.get(shapeId).name = input;
         $(this).parents("li").find("span").text(input);
-        console.log(e);
+        // console.log(e);
     });
 
 
@@ -1503,12 +1545,12 @@ function UI() {
         var name = $(this).attr("name");
         var value = $(this).val();
         var shapeId = $(this).parents("li").attr("key");
-        if (name === "style") {
-            shapes.get(shapeId).appearence.style = value;
-            console.log("sett " + value + " --- " + shapes.get(shapeId).appearence.style);
-            shapes.get(shapeId).draw();
-            view.draw();
-        }
+
+        shapes.get(shapeId).appearence[name] = value;
+
+        shapes.get(shapeId).draw();
+        view.draw();
+
         console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
     });
     
@@ -1537,27 +1579,29 @@ function Plot() {
     
     this.plotShapeIds = function(shapeIds) {
         console.log("plotting");
-        var paths = [];
-        for (var i = 0; i < shapeIds.length; i++) {
-            var shape = shapes.get(shapeIds[i]);
+        // var paths = [];
+        // for (var i = 0; i < shapeIds.length; i++) {
+        //     var shape = shapes.get(shapeIds[i]);
             
-            if (shape.outline.visible) {
-                shape.mergeLines(true);
-                var outlines = shape.outline.children;
-                for (var i = 0; i < outlines.length; i++) {
-                    paths.push(outlines[i].segments);
-                }
-            }
-            paths = paths.concat(shape.lineGroup.children.map(function(e) { return e.segments }));
-        }
+        //     if (shape.outline.visible) {
+        //         shape.mergeLines(true);
+        //         var outlines = shape.outline.children;
+        //         for (var i = 0; i < outlines.length; i++) {
+        //             paths.push(outlines[i].segments);
+        //         }
+        //     }
+        //     paths = paths.concat(shape.fill.children.map(function(e) { return e.segments }));
+        // }
 
+        var data = sortIntoPens(shapeIds);
+        console.log("data = " + data);
         var req = $.ajax({
             url: "http://localhost:5000/plot/",
             type: "POST",
             // dataType: "json",
             crossDomain: true,
             data: {
-                "data": JSON.stringify(paths),
+                "data": JSON.stringify(data),
             },
         }).done(function(data) {
 
@@ -1571,7 +1615,6 @@ function Plot() {
 
     };
     
-    return this;
 }
 
 
@@ -1599,7 +1642,6 @@ function Command(action, direction, args) {
         console.log("executed " + name + " with " + this.args);
     };
 
-    return this;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -2183,12 +2225,9 @@ function Current() {
 
     Object.defineProperty(this, 'shape', {
         get: function() {
-            console.log("getting shape");
             return shape;
-            // return current.shape;
         },
         set: function(v) {
-            console.log("setting shape");
             ui.setCurrentShape(v);
             shape = v;
         },
@@ -2222,6 +2261,10 @@ keyHandler.add(["command", "m"], function() {
     shapes.shapeIds().forEach(function(id) {
         shapes.get(id).mergeLines();
     });
+});
+
+keyHandler.add(["command", "a"], function() {
+    filterDuplicateLines(shapes.shapeIds());
 });
 
 // keyHandler.add(["command", "l"], function() {
@@ -2272,7 +2315,7 @@ $("#download").click(function(e) {
     var anchor = $(this);
     var req = $.ajax({
         url: "http://localhost:5000/save/",
-        // async: false,
+        // asnyc: false,
         type: "POST",
         dataType: "json",
         crossDomain: true,
