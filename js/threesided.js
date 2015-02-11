@@ -1247,7 +1247,7 @@ function TShape(idOrData, order) {
             }
             else if (a.filltype === "offset") {
                 lines = [];
-                requestOffsets(this);
+                offsetsForShape(this);
             }
         }
         
@@ -1698,27 +1698,8 @@ function Plot() {
     
 }
 
-var requestMade = false;
-function requestOffsets(shape) {
-    if (requestMade) {
-        return;
-    }
-    shape.mergeLines(true);
-    var outlines = shape.outline.children.map(function(path) {
-        return path.segments.map(function(segment) {
-            return { x: Number(segment.point.x.toFixed(2)), y : segment.point.y };
-        })
-    });
-    console.log(outlines);
-    var spacing = 5;
-    
-    var data = {
-        "outer": outlines[0],
-        "inner": outlines.splice(1),
-        "spacing": shape.appearence.spacing,
-    };
-    
-    var req = $.ajax({
+function requestOffsets(data, cb) {
+     var req = $.ajax({
         url: "http://localhost:5000/offsets/",
         type: "POST",
         dataType: "json",
@@ -1727,29 +1708,113 @@ function requestOffsets(shape) {
             "data": JSON.stringify(data),
         },
     }).done(function(data) {
+        cb.call(undefined, data);
+        console.log(data);
+    });
+}
+
+function segmentToXY(segment) {
+    return {
+        x: segment.point.x,
+        y: segment.point.y
+    };
+}
+
+var requestMade = false;
+function offsetsForShape(shape) {
+    if (requestMade) {
+        return;
+    }
+    
+    shape.mergeLines(true);
+    var outlines = shape.outline.children.map(function(path) {
+        return path.segments.map(segmentToXY);
+    });
+    
+    console.log(outlines);
+    var spacing = 5;
+    
+    var data = {
+        "outer": outlines[0],
+        "inner": outlines.splice(1),
+        "spacing": shape.appearence.spacing,
+        "maxlines": 50,
+    };
+
+    function donecb(data) {
         if (data.success) {
-            // shape.fill.removeChildren();
-            // shape.lines = [];
-            // shape.appearence.filltype = "offset";
             var lines = data.offsets.map(function(offset) {
                 var p = new Path({
                     segments: offset,
-                    strokeColor: '#888',
                 });
                 p.addSegment(offset[0]);
                 return p;
             });
-            // console.log(shape.lines);
             shape.makeLines(lines);
             view.draw();
         }
         requestMade = false;
-        console.log(data);
-    });
+    }
+
+    requestOffsets(data, donecb);
 
     requestMade = true;
 }
 
+
+var allOuters = new Group();
+function offsetsForAllOuter(spacing, drawGroup, maxLines, boundingRect) {
+
+    var shapeIds = shapes.shapeIds();
+
+    //the outside of the shapes becomes the inside of the whole box
+    var data = {};
+    data["inner"] = shapeIds.map(function(shapeId) {
+        var shape = shapes.get(shapeId);
+        var outer = shape.outline.children[0].clone();
+        // outer.reverse();
+        return outer.segments.map(segmentToXY);
+    });
+
+
+    data["outer"] = [];
+    if (boundingRect !== undefined) {
+        data["outer"] = boundingRect.segments.map(segmentToXY);
+    }
+
+    if (maxLines === undefined) {
+        maxLines = 20;
+    }
+    data["maxlines"] = maxLines;
+    // data["outer"] = shapeIds.map(function(shapeId) {
+    //     var shape = shapes.get(shapeId);
+    //     var outer = shape.outline.children[0].clone();
+    //     // outer.reverse();
+    //     return outer.segments.map(segmentToXY);
+    // })[0];
+
+    // data["inner"] = [boundingRect.segments.map(segmentToXY)];
+    data["spacing"] = spacing;
+
+    allOuters.removeChildren();
+    requestOffsets(data, function(data) {
+         if (data.success) {
+             var lines = data.offsets.map(function(offset) {
+                 var p = new Path({
+                     segments: offset,
+                     strokeColor: '#888',
+                 });
+                 p.addSegment(offset[0]);
+                 return p;
+             });
+
+             // allOuters.removeChildren();
+             allOuters.addChildren(lines);
+             view.draw();
+        }
+    });
+    
+}
 
 function Command(action, direction, args) {
     this.action = action;
@@ -2169,9 +2234,29 @@ function Action(invoker, keyHandler) {
             }
         }
     }
-
+    
     function marqueShapesUp(event) {
         marqueRect.visible = false;
+    }
+
+
+
+    var offsetRect = new Path.Rectangle(new Point(), new Point());
+
+    function offsetRectDrag(event) {
+        offsetRect.remove();
+        var p1 = project.activeLayer.globalToLocal(event.downPoint);
+        var p2 = project.activeLayer.globalToLocal(event.point);
+        offsetRect = new Path.Rectangle(p1, p2);
+        offsetRect.strokeColor = "#0f4";
+        offsetRect.strokeWidth = 1;
+        
+    }
+    
+    function offsetRectUp(event) {
+        console.log(event);
+        offsetsForAllOuter(4, allOuters, 50, offsetRect);
+        offsetRect.remove();
     }
 
     function createMouseMode(init, mouseDown, mouseDrag, mouseScroll, mouseUp) {
@@ -2184,8 +2269,6 @@ function Action(invoker, keyHandler) {
         };
     }
 
-
-
     var none = function() {};
     
     var modes = {
@@ -2196,6 +2279,7 @@ function Action(invoker, keyHandler) {
         "d": createMouseMode(none, findShape, removeTriangle, pan, none),
         "m": createMouseMode(none, selectShapes, moveShapes, pan, none),
         "e": createMouseMode(none, eraseTriangle, eraseTriangle, pan, none),
+        "b": createMouseMode(none, none, offsetRectDrag, none, offsetRectUp),
     };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
@@ -2341,8 +2425,8 @@ var gridGroup = new Group();
 var nx = 0, ny = 0, side = 0, alt = 0;
 var boundsSize = new Size(1520, 1032);
 
-var rect = new Path.Rectangle(new Point(0, 0), boundsSize);
-rect.strokeColor = '#b00';
+var boundingRect = new Path.Rectangle(new Point(0, 0), boundsSize);
+boundingRect.strokeColor = '#b00';
 
 var db = {}; //createDatabase(new Size(nx, ny)); 
 var invertedIndex = new InvertedIndex;
@@ -2401,7 +2485,8 @@ keyHandler.add(["command", "a"], function() {
 });
 
 keyHandler.add(["command", "d"], function() {
-    requestOffsets(shapes.get(1));
+    // offsetsForShape(shapes.get(1));
+    offsetsForAllOuter(4, allOuters, 50, boundingRect);
     console.log("requested");
 });
 
