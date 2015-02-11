@@ -69,14 +69,14 @@ def offsets():
     
     process = Popen(['./offsets/offsets'], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     out, er = process.communicate(input=request.form['data'])
-    # print request.form['data']
-    # print out
 
-    ret = {
-        "success": process.returncode == 0,
-        "offsets": json.loads(out),
-    }
-    # print ret
+    ret = { "success": process.returncode == 0 }
+    
+    try:
+        ret["offsets"] = json.loads(out)
+    except ValueError:
+        ret["success"] = False
+
     res = make_response(json.dumps(ret))
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
