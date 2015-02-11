@@ -1083,6 +1083,11 @@ function filterDuplicateLines(shapeIds) {
     
     for (var i = 0; i < shapeIds.length; i++) {
         var shape = shapes.get(shapeIds[i]);
+
+        if (!shape.outline.visible) {
+            continue;
+        }
+        
         var perims = shape.getPerims();
         var pen = shape.appearence.outline;
         var newperims = [];
@@ -1198,7 +1203,7 @@ function TShape(idOrData, order) {
     this.appearence = {
         spacing: Math.random()*5+2,
         angle: Math.random()*180,
-        filltype: "offset",
+        filltype: "hatch",
         _fill: 1,
         _outline: 1,
     };
@@ -1268,9 +1273,9 @@ function TShape(idOrData, order) {
         var perims = this.getPerims(getMinOutline);
         this.perims = mergeLines(perims);
         
-        if (this.outline.visible) {
-            makeOutline(this.perims, this.outline);
-        }
+        // if (this.outline.visible) {
+        makeOutline(this.perims, this.outline);
+        // }
         
         if (this.fill.visible) {
             this.makeLines();
@@ -1494,7 +1499,7 @@ function UI() {
     });
 
     var template = $("#shapes").html();
-    
+    $("#shapes").html("");
 
     this.addShape = function(shape) {
         $("#shapes").append(template);
@@ -1531,7 +1536,7 @@ function UI() {
 
     var currentExpandedShape = false;
     function highlightDiv(div, highlight) {
-        div.css("border-left", "4px solid " + (highlight ? "#3da55e" : "#fff"));
+        div.css("border-left", "4px solid " + (highlight ? "#3dc57e" : "#fff"));
     }
     this.setCurrentShape = function(shapeId) {
         if (currentExpandedShape) {
