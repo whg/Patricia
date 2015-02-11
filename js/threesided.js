@@ -1588,10 +1588,15 @@ function UI() {
         var name = $(this).attr("name");
         var value = parseInt($(this).val());
         var shapeId = parseInt($(this).parents("li").attr("key"));
-        shapes.get(shapeId).appearence[name] = value;
-        console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
-        shapes.get(shapeId).draw();
-        view.draw();
+        var shape = shapes.get(shapeId);
+
+        if (shape.appearence[name] != value) {
+        
+            shapes.get(shapeId).appearence[name] = value;
+            console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
+            shapes.get(shapeId).draw();
+            view.draw();
+        }
     }
 
     $("#shapes").on("mousedown", "input[type=range]", function(e){
@@ -1693,12 +1698,13 @@ function requestOffsets(shape) {
     if (requestMade) {
         return;
     }
+    shape.mergeLines(true);
     var outlines = shape.outline.children.map(function(path) {
         return path.segments.map(function(segment) {
             return { x: Number(segment.point.x.toFixed(2)), y : segment.point.y };
         })
     });
-    
+    console.log(outlines);
     var spacing = 5;
     
     var data = {
