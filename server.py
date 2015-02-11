@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import json
 import serial
+from subprocess import Popen, PIPE, STDOUT
 
 from plotter import Plotter
 
@@ -61,6 +62,28 @@ def plot():
     res = make_response("done.")
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
+
+
+@app.route('/offsets/', methods=['POST', 'GET'])
+def offsets():
+    
+    process = Popen(['./offsets/offsets'], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    out, er = process.communicate(input=request.form['data'])
+    # print request.form['data']
+    # print out
+
+    ret = {
+        "success": process.returncode == 0,
+        "offsets": json.loads(out),
+    }
+    # print ret
+    res = make_response(json.dumps(ret))
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    return res
+
+    # print p.stdout
+    # print p.returncode
+
 
 if __name__ == '__main__':
     # try:

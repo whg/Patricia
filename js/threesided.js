@@ -1192,13 +1192,13 @@ function TShape(idOrData, order) {
 
     this.fill = new Group({
         strokeColor: 'black',
-        visible: false,
+        // visible: false,
     });
 
     this.appearence = {
         spacing: Math.random()*5+2,
         angle: Math.random()*180,
-        filltype: "hatch",
+        filltype: "offset",
         _fill: 1,
         _outline: 1,
     };
@@ -1230,18 +1230,26 @@ function TShape(idOrData, order) {
         this.fill.remove();
     }
     
-    this.lines = undefined;
-    this.makeLines = function() {
+    this.makeLines = function(lines) {
+        var a = this.appearence;
         
-        if (this.appearence.filltype === "hatch") {
-            this.lines = hatchLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
-        }
-        else if (this.appearence.filltype === "joinedhatch") {
-            this.lines = joinedHatchLinesForShape(this.appearence.angle, this.appearence.spacing, this.outline);
+        if (lines === undefined) {
+            if (a.filltype === "hatch") {
+                lines = hatchLinesForShape(a.angle, a.spacing, this.outline);
+            }
+            else if (a.filltype === "joinedhatch") {
+                lines = joinedHatchLinesForShape(a.angle, a.spacing, this.outline);
+            }
+            else if (a.filltype === "offset") {
+                lines = [];
+                requestOffsets(this);
+            }
         }
         
         this.fill.removeChildren();
-        this.fill.addChildren(this.lines);
+        this.fill.addChildren(lines);
+        console.log("lines = ");
+        console.log(lines);
         this.fill.strokeColor = "black";
     }
 
@@ -1260,9 +1268,13 @@ function TShape(idOrData, order) {
         var perims = this.getPerims(getMinOutline);
         this.perims = mergeLines(perims);
         
-        makeOutline(this.perims, this.outline);
+        if (this.outline.visible) {
+            makeOutline(this.perims, this.outline);
+        }
         
-        this.makeLines();
+        if (this.fill.visible) {
+            this.makeLines();
+        }
         
         // console.log("draw took " + (performance.now() - start) + "");
     };   
@@ -1666,14 +1678,65 @@ function Plot() {
 
             console.log("sent file to plot, returned: " + data);
         }).fail(function(xhr, status, et) {
-        console.log("plot failed");
-        console.log(xhr.responseText);
-        console.log(et);
-        console.log(status);
-    });
+            console.log("plot failed");
+            console.log(xhr.responseText);
+            console.log(et);
+            console.log(status);
+        });
 
     };
     
+}
+
+var requestMade = false;
+function requestOffsets(shape) {
+    if (requestMade) {
+        return;
+    }
+    var outlines = shape.outline.children.map(function(path) {
+        return path.segments.map(function(segment) {
+            return { x: Number(segment.point.x.toFixed(2)), y : segment.point.y };
+        })
+    });
+    
+    var spacing = 5;
+    
+    var data = {
+        "outer": outlines[0],
+        "inner": outlines.splice(1),
+        "spacing": shape.appearence.spacing,
+    };
+    
+    var req = $.ajax({
+        url: "http://localhost:5000/offsets/",
+        type: "POST",
+        dataType: "json",
+        crossDomain: true,
+        data: {
+            "data": JSON.stringify(data),
+        },
+    }).done(function(data) {
+        if (data.success) {
+            // shape.fill.removeChildren();
+            // shape.lines = [];
+            // shape.appearence.filltype = "offset";
+            var lines = data.offsets.map(function(offset) {
+                var p = new Path({
+                    segments: offset,
+                    strokeColor: '#888',
+                });
+                p.addSegment(offset[0]);
+                return p;
+            });
+            // console.log(shape.lines);
+            shape.makeLines(lines);
+            view.draw();
+        }
+        requestMade = false;
+        console.log(data);
+    });
+
+    requestMade = true;
 }
 
 
@@ -2324,6 +2387,11 @@ keyHandler.add(["command", "m"], function() {
 
 keyHandler.add(["command", "a"], function() {
     filterDuplicateLines(shapes.shapeIds());
+});
+
+keyHandler.add(["command", "d"], function() {
+    requestOffsets(shapes.get(1));
+    console.log("requested");
 });
 
 // keyHandler.add(["command", "l"], function() {

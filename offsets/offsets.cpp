@@ -1,4 +1,10 @@
 #include<vector>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#include <string>
+#include <sstream>
 
 #include<CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include<CGAL/Polygon_2.h>
@@ -18,7 +24,6 @@ using namespace std;
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
 using namespace boost::property_tree;
-
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_2 Point;
@@ -41,6 +46,20 @@ Polygon polygonFromArray(ptree array) {
         poly.push_back(Point(x, y));
     }
     return poly;
+}
+
+string stringArray(vector<string> strings) {
+
+    if (strings.size() == 0) {
+        return string("");
+    }
+    
+    ostringstream oss;
+    oss << "[";
+    copy(strings.begin(), strings.end() - 1, ostream_iterator<string>(oss, ","));
+    oss << strings.back() << "]";
+
+    return string(oss.str());
 }
 
 int main()
@@ -96,13 +115,14 @@ int main()
   
     PolygonPtrVector offset_polygons;
     // ptree contoursArray;
-    stringstream ret;
-    int i = 0;
+    int i = 1;
 
+    vector<string> offsets, points;
+    
     do {
       
         offset_polygons = CGAL::create_offset_polygons_2<Polygon>(spacing * i++, *skel);
-
+        
         
         if (i > 50) {
             break;
@@ -112,14 +132,14 @@ int main()
              pi != offset_polygons.end(); ++pi) {
             
             Polygon poly = **pi;
-            ret << "[";
-            
+
             for (Polygon::Vertex_const_iterator vi = poly.vertices_begin();
                  vi != poly.vertices_end(); ++vi) {
                 
                 Point p = *vi;
-                ret << "[" << p.x() << "," << p.y() << "],";
-
+                stringstream pointss;
+                pointss << "[" << p.x() << "," << p.y() << "]";
+                points.push_back(pointss.str());
                 // ptree ptpoint, x, y;
                 // x.put_value(((float)3.2));
                 // y.put_value(p.y());
@@ -130,12 +150,17 @@ int main()
                 // //create an array element with an empty first value
                 // contoursArray.push_back(make_pair("", ptpoint));
             }
-            ret << "],";
+            
+
+            offsets.push_back(stringArray(points));
+            points.clear();
         }
 
-        
     } while (offset_polygons.size() > 0);
 
+
+    cout << stringArray(offsets);
+    
     // ptime t3(boost::posix_time::microsec_clock::local_time());
     // dt = t3 - t2;
     // //number of elapsed miliseconds
@@ -148,6 +173,6 @@ int main()
     // stringstream output;
     // write_json(output, pt, false);
     
-    cout << ret.str() << endl;
-    return 1;
+    // cout << ret.str();
+    return EXIT_SUCCESS;
 }
