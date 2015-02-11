@@ -71,6 +71,7 @@ int main()
     Polygon outer;
     Polygons holes;
     float spacing = 1;
+    int maxlines = 5;
     
     try {
         stringstream json(input);
@@ -78,6 +79,7 @@ int main()
         boost::property_tree::read_json(json, pt);
 
         spacing = pt.get<float>("spacing");
+        maxlines = pt.get<int>("maxlines");
         
         outer = polygonFromArray(pt.get_child("outer"));
         
@@ -123,8 +125,7 @@ int main()
       
         offset_polygons = CGAL::create_offset_polygons_2<Polygon>(spacing * i++, *skel);
         
-        
-        if (i > 50) {
+        if (i > maxlines+1) {
             break;
         }
 
