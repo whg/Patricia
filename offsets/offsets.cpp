@@ -39,8 +39,6 @@ Polygon polygonFromArray(ptree array) {
         float x = point.second.get<float>("x");
         float y = point.second.get<float>("y");
         poly.push_back(Point(x, y));
-        cout << "poly : " << x <<"," << y << "\n";
-
     }
     return poly;
 }
