@@ -124,7 +124,6 @@ function Edge(start, end, typeVal) {
     }
 
     this.toString = function() {
-        // return this.start.id + "-" + this.end.id;
         return this.getId();
     }
 
@@ -174,7 +173,12 @@ function gradientFromAngle(angle) {
 }
 
 function linesForShape(angle, spacing, shape) {
-    //build lines at normal to line created from angle
+    // build lines at normal to line created from angle
+    // we create a vector that starts at either the top right
+    // or bottom right with an angle of `angle`
+    // we step along this vector by `spacing`, drawing lines that
+    // are perpendicular to it
+    // all lines are the diagonal of the bounds of `shape`
 
     angle %= 180;
 
@@ -195,19 +199,14 @@ function linesForShape(angle, spacing, shape) {
     var dirLength = toCorner.length * Math.cos(angleBetween);
     var lineSide = dir.multiply(toCorner.length);
 
-    
-    var rectp = new Path.Rectangle(rect);
     var lines = [];
-    var n = 0;
     for (var i = spacing; i < dirLength; i+= spacing) {
         var d = dir.multiply(i);
         var point = start.add(d);
-
-        var q1 = point.add(lineSide).rotate(90, point);
-        var q2 = point.add(lineSide).rotate(-90, point);
-        
-        var l = new Path.Line(q1, q2);
-        lines.push(l);
+        var out = point.add(lineSide); 
+        var q1 = out.rotate(90, point);
+        var q2 = out.rotate(-90, point);
+        lines.push(new Path.Line(q1, q2));
 
     }
 
@@ -216,6 +215,7 @@ function linesForShape(angle, spacing, shape) {
 
 
 function joinedHatchLinesForShape(angle, spacing, shape) {
+    // hatch lines where the ends continue and draw part of the contour
 
     var lines = linesForShape(angle, spacing, shape);
     var points = [];
@@ -258,6 +258,9 @@ function joinedHatchLinesForShape(angle, spacing, shape) {
 }
 
 function hatchLinesForShape(angle, spacing, shape) {
+    // your standard hatching
+    // the lines are drawing in alternating order,
+    // so the plotter doesn't waste time
 
     var lines = linesForShape(angle, spacing, shape);
     var points = [];
@@ -277,20 +280,15 @@ function hatchLinesForShape(angle, spacing, shape) {
         points = points.concat(intersections);
     }
 
-    // console.log(lines);
     var lines = []
     for (var i = 0; i < points.length; i+=2) {
-        lines.push(new Path.Line(points[i], points[i+1]));
-        // l.strokeColor = 'black';
-        
+        lines.push(new Path.Line(points[i], points[i+1]));    
     }
  
     return lines;
 }
 
 function zigzagLinesForShape(angle, spacing, shape) {
-    // var points = linePointsForShape(angle, spacing, shape);
-    // var lines = []
 
     var lines = linesForShape(angle, spacing, shape);
     var points = [];
@@ -317,13 +315,8 @@ function zigzagLinesForShape(angle, spacing, shape) {
             intersections.reverse();
         }
 
-                // var p = new Path.Circle(point, 3);
-        // p.fillColor = 'red';
-        
-        // console.log(points);
         retlines.push(new Path.Line(lines[i-1].segments[j].point, intersections[0]));
         retlines.push(new Path.Line(intersections[intersections.length-1], lines[i].segments[k].point));
-        // points = points.concat(intersections);
     }
 
  
@@ -734,15 +727,8 @@ function SetWithUniverse(universe) {
     // default universe is the database
     extend(this, new Set());
 
-    // this._universe = universe;
-
-    // if (universe === undefined) {
-    //     this._universe = db; //createDatabase();
-    // }
-
 
     this.exists = function(e) {
-        // return this._universe[e] !== undefined;
         return db[e] !== undefined;
     }
 
@@ -812,9 +798,6 @@ function createDatabase(size) {
     return db;
 }
 
-// console.log(Object.keys(db));
-// var pts = {}; //= new Set(Object.keys(db));
-
 function isValidTriple(triple) {
     return db[triple.id] !== undefined;
 }
@@ -845,7 +828,7 @@ function getPerimeterEdges(pntSet) {
 }
 
 
-function cartesianProductOf() {
+function cartesianProduct() {
   return Array.prototype.reduce.call(arguments, function(a, b) {
     var ret = [];
     a.forEach(function(a) {
@@ -871,7 +854,9 @@ function pathFromPerimeterEdges(edges, getMin) {
     // namely, an object with edge ids as keys and
     // edge objects as values
     // returns a list of edge lists
-
+    //
+    // if `getMin` is true, the function tries all paths to see
+    // which is the shortest. this can take a while.
     
     
     function IndexHolder(elem) {
@@ -951,16 +936,13 @@ function pathFromPerimeterEdges(edges, getMin) {
         var perims = [];
         do {
             var sortedStarts = sorted(Object.keys(starts.data));
-
-            // if (sortedStarts.length === 0) {
-            //     break;
-            // }
             
             var firstEdge = starts.data[sortedStarts[0]][0];
 
             var nextEdge;
             var prevEdge = starts.popIndex(firstEdge.start)
             var perim = [prevEdge];
+            
             do {
             
                 nextEdge = starts.popIndex(prevEdge.end);
@@ -987,7 +969,7 @@ function pathFromPerimeterEdges(edges, getMin) {
         branchRoutes.push(branches[branchIndices[i]]);
     }
 
-    var routesProduct = cartesianProductOf.apply(undefined, branchRoutes);
+    var routesProduct = cartesianProduct.apply(undefined, branchRoutes);
     var routesMap = routesProduct.map(function(e) {
         var ret = {};
         for (var i = 0; i < e.length; i++) {
@@ -1014,20 +996,21 @@ function pathFromPerimeterEdges(edges, getMin) {
     var mol = 1000, minOutline = undefined;
     
     outlines.forEach(function(outline) {
-        // console.log("length  = " + outline.length + ", outline lengths = " + outline.map(function(e) { return e.length; }));
         if (outline.length < mol) {
             
             minOutline = outline;
             mol = outline.length;
         }
     });
-    // console.log("with multiple, perims.length = " + minOutline.length);
-    // console.log("we have " + perims.length + " outlines");
+
     return minOutline;
 }
 
 
 function makeOutline(perims, outline) {
+    // given perims (a 2D array) of grid indices,
+    // fill the paper.js outline
+    
     var perim = perims[0];
     if (perim.length === 0) {
         return;
@@ -1049,6 +1032,10 @@ function makeOutline(perims, outline) {
 
 
 function mergeLines(perims) {
+    // the perims have consecutive triangle edges,
+    // this merges lines of the same orientation so they
+    // are smooth when drawn
+    
     for (var i = 0; i < perims.length; i++) {
 
         var perim = perims[i];
@@ -1057,8 +1044,6 @@ function mergeLines(perims) {
         
         for (var j = 1; j < perim.length; j++) {
             if (perim[j].line.type === perim[j-1].line.type) {
-                // edgesToRemove.push(j);
-                // edges.push(perim[j-1]);
                 edge.end = perim[j].end;
             }
             else {
@@ -1067,15 +1052,16 @@ function mergeLines(perims) {
             }
         }
         edges.push(edge);
-        // console.log(edges);
         perims[i] = edges;
     }
     return perims;
 }
 
 function filterDuplicateLines(shapeIds) {
-    // we don't want to redraw lines
-    // here we 
+    // we don't want to redraw lines of outlines that touch each other
+    // heere we remove the edges from each shape's perimeter if it has been drawn before
+    // we keep `db`, an array of Sets that store the use of each edge
+    
     var db = [];
     for (var i = 1; i < 9; i++) {
         db[i] = new Set();
@@ -1091,16 +1077,19 @@ function filterDuplicateLines(shapeIds) {
         var perims = shape.getPerims();
         var pen = shape.appearence.outline;
         var newperims = [];
+        
         for (var j = 0; j < perims.length; j++) {
+            
             var np = [];
             var k = 0;
+
             do {
                 edge = perims[j][k++];
             } while(db[pen].has(edge.id) && k < perims[j].length);
 
             db[pen].add(edge.id);
             np.push(edge);
-            // console.log("pushed at k = " + k);
+
             for (; k < perims[j].length; k++) {
                 edge = perims[j][k];
                 if (db[pen].has(edge.id)) {
@@ -1108,41 +1097,41 @@ function filterDuplicateLines(shapeIds) {
                         newperims.push(np);
                         np = [];
                     }
-                    // continue;
                 }
                 else {
                     np.push(edge);
                     db[pen].add(edge.id);
                 }
                 
-                console.log(edge.line.type + "," + edge.line.val + " -> " + edge.id);
             }
             if (np.length !== 0){
                 newperims.push(np);
             }
         }
-        // console.log(newperims);
-        // console.log(JSON.stringify(newperims[0].map(function(e) { return e.id;} )));
+
         makeOutline(mergeLines(newperims), shape.outline);
-        // shape.outline.removeChildren();
     }
 
     view.draw();
 }
 
 function sortIntoPens(shapeIds) {
+    // take each shape and sort the outlines and fills in order of
+    // their pens, so all drawings of one pen are drawn together
+    
     var pens = {};
     for (var i = 1; i < 9; i++) {
         pens[i] = [];
     }
     
     for (var i = 0; i < shapeIds.length; i++) {
+        
         var shape = shapes.get(shapeIds[i]);
         if (shape.outline.visible) {
+
             var outlines = shape.outline.children;
             var outlinepen = shape.appearence.outline;
-            console.log(outlines);
-            // debugger;
+
             for (var j = 0; j < outlines.length; j++) {
                 pens[outlinepen].push(outlines[j].segments);
             }
@@ -1172,7 +1161,7 @@ function TShape(idOrData, order) {
 
     if (idOrData.triples === undefined) {
         this.id = idOrData;
-        this.order = order; //Object.keys(shapes).length;
+        this.order = order;
         this.name = "Shape " + this.id;
     }
     else {
@@ -1186,9 +1175,6 @@ function TShape(idOrData, order) {
         this._values
     }
 
-    // var needsDraw = true;
-    // this.addcb = function() { needsDraw = true; };
-    // this.removecb = function() { needsDraw = true; };
     
     this.outline = new CompoundPath({
         strokeColor: 'black',
@@ -1207,11 +1193,14 @@ function TShape(idOrData, order) {
         _fill: 1,
         _outline: 1,
     };
+
+    // we want to know when fill and outline in appearence
+    // are set, so define getters and setters
+    
     var that = this;
     Object.defineProperty(this.appearence, "fill", {
         set: function(v) {
             that.fill.visible = v !== "none";
-            console.log("fill set");
             this._fill = v;
         },
         get: function() {
@@ -1221,7 +1210,6 @@ function TShape(idOrData, order) {
 
     Object.defineProperty(this.appearence, "outline", {
         set: function(v) {
-            console.log("outline set");
             that.outline.visible = v !== "none";
             this._outline = v;
         },
@@ -1253,29 +1241,24 @@ function TShape(idOrData, order) {
         
         this.fill.removeChildren();
         this.fill.addChildren(lines);
-        console.log("lines = ");
-        console.log(lines);
         this.fill.strokeColor = "black";
     }
 
     this.getPerims = function(getMinOutline) {
+        
         var outerEdges = getPerimeterEdges(this);
-
-        // var start = performance.now();
         var perims = pathFromPerimeterEdges(outerEdges, getMinOutline);
         return perims;
     };
     
     this.draw = function(getMinOutline) {
-        // console.log(perim[0]);
-        // console.log(perim[0].map(function(e) { return JSON.stringify(e.line); }));
+        // var start = performance.now();
 
         var perims = this.getPerims(getMinOutline);
         this.perims = mergeLines(perims);
-        
-        // if (this.outline.visible) {
+
+        // always do this even if it's not visible so we can do offseting
         makeOutline(this.perims, this.outline);
-        // }
         
         if (this.fill.visible) {
             this.makeLines();
@@ -1300,20 +1283,13 @@ function TShape(idOrData, order) {
         };
     };
 
-
-    // this.plot = function() {
-    //     this.perims = pathFromPerimeterEdges(getPerimeterEdges(this));
-    //     var outerEdges = getPerimeterEdges(this);
-    //     var perim = pathFromPerimeterEdges(outerEdges);
-    //     perim = mergeLines(perim);
-    //     makeOutline(perim, this.outline);
-    // }
 }
 
 
-
-
 function InvertedIndex() {
+    // holds arrays for each triple in the grid.
+    // the array contains which shape is present at that triple.
+    // makes queries much faster than searching shapes.
 
     var index = {};
 
@@ -1369,6 +1345,7 @@ function InvertedIndex() {
 
 
 function Shapes() {
+    // the main container keeping hold of all the shapes
 
     var shapes = {};
     this.layer = new Group();
@@ -1386,7 +1363,6 @@ function Shapes() {
     this.add = function(key) {
         var shape = new TShape(key, Object.keys(shapes).length);
         shapes[key] = shape;
-        // shapes[key].outline.setLayer(layer);
         ui.addShape(shape);
     };
 
@@ -1394,7 +1370,6 @@ function Shapes() {
         shapes[key].clearDrawing();
         ui.removeShape(key);
         delete shapes[key];
-        // ui.updateShapes(this);
 
     };
 
@@ -1411,11 +1386,6 @@ function Shapes() {
     };
 
     this.shapeIds = function() {
-        // var ret = {};
-        // for (var id in shapes) {
-        //     ret[id] = id;
-        // }
-        // return ret;
         return Object.keys(shapes);
     };
 
@@ -1513,17 +1483,6 @@ function UI() {
         added.find("input[name=spacing]").val(shape.appearence.spacing);
         added.find("input[name=angle]").val(shape.appearence.angle);
 
-        // $("#shapes li:last-child").on("dblclick", function() {
-        // // var arrow = $(this);
-        // // arrow.toggleClass("arrow-down");
-        //     console.log("double asdf");
-        // });        
-        // $("#shapes li:last-child").on("click", function() {
-        // // var arrow = $(this);
-        // // arrow.toggleClass("arrow-down");
-        //     console.log("asdf");
-        // });        
-
     };
 
     function getItem(shapeId) {
@@ -1547,11 +1506,7 @@ function UI() {
         highlightDiv(div, true);
         // li.css("background", "#faa");
         currentExpandedShape = shapeId;
-        // console.log("shapeId = " + shapeId);
-        // console.log(div);
     };
-
-    // $("#shapes").on("click", "")
 
 
     $("#shapes").on('submit','form.setname',function(e){
@@ -1579,17 +1534,9 @@ function UI() {
         var details = arrow.parent().next();
         
         details.toggle();
-
-        // if (details.css("display") !== "none") {
-        //     selectedShape = $(this).parents("li").attr("key");
-        // }
-        // else {
-        //     selectedShape = undefined;
-        // }
     }
 
     function inputRangeUpdate(e) {
-        console.log("updating: " + $(this).val());
         var name = $(this).attr("name");
         var value = parseInt($(this).val());
         var shapeId = parseInt($(this).parents("li").attr("key"));
@@ -1632,18 +1579,83 @@ function UI() {
 
         console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
     });
-    
-    
-    // this.updateShapes = function(shapes) {
-    //     var ids = shapes.keysInOrder();
-    //     $("#shapes").html("");
-    //     for (var i = 0, shape = null; i < ids.length; i++) {
-    //         shape = shapes.get(ids[i]);
-    //         addShape(shape);
-    //     }
-    // }
 
-    return this;
+
+    ////////////////////////////////////////
+    // download & upload
+    
+    $("#download").click(function(e) {
+
+        var data = shapes.getState();
+        
+        var anchor = $(this);
+        var req = $.ajax({
+            url: "http://localhost:5000/save/",
+            type: "POST",
+            dataType: "json",
+            crossDomain: true,
+            data: {
+                "data": JSON.stringify(data),
+            },
+        }).done(function(data) {
+
+            window.location = "http://127.0.0.1:5000/download/" + data.fileid;
+            
+        });
+        
+        e.preventDefault();
+        return false;
+    });
+
+
+    $("#upload").click(function(e){
+        e.preventDefault();
+        $("#fileupload").trigger('click');
+    });
+
+    function loadState(obj) {
+        console.log("loading");
+        console.log(obj);
+
+        shapes.loadState(JSON.parse(obj));
+        var shapeIds = shapes.shapeIds();
+        shapeIds.forEach(function(shapeId) {
+            var shape = shapes.get(shapeId);
+            invertedIndex.addShape(shape);
+            ui.addShape(shape);
+        });
+        
+
+    }
+
+    $("input:file").change(function (){
+
+        var file = $(this).prop("files")[0];
+        var fileReader = new FileReader();
+        fileReader.onload = function(event) {
+            loadState(event.target.result);
+            invoker.clear();
+            view.draw();
+        };
+
+        fileReader.readAsText(file);
+    });
+
+
+    $("#gridsize").on("mousemove",function(e){
+        var newsize = $(this).val();
+        if (newsize !== current.triangleSize) {
+            setTriangleSize(newsize);
+        }
+    });
+
+    $("#gridcolour").on("mousemove",function(e){
+        console.log(gridGroup.strokeColor);
+        gridGroup.strokeColor = new Color($(this).val() * 0.01);
+        view.draw();
+
+    });
+
 }
 
 function Plot() {
@@ -1658,19 +1670,6 @@ function Plot() {
     
     this.plotShapeIds = function(shapeIds) {
         console.log("plotting");
-        // var paths = [];
-        // for (var i = 0; i < shapeIds.length; i++) {
-        //     var shape = shapes.get(shapeIds[i]);
-            
-        //     if (shape.outline.visible) {
-        //         shape.mergeLines(true);
-        //         var outlines = shape.outline.children;
-        //         for (var i = 0; i < outlines.length; i++) {
-        //             paths.push(outlines[i].segments);
-        //         }
-        //     }
-        //     paths = paths.concat(shape.fill.children.map(function(e) { return e.segments }));
-        // }
 
         filterDuplicateLines(shapeIds);
         
@@ -1688,11 +1687,6 @@ function Plot() {
         }).done(function(data) {
 
             console.log("sent file to plot, returned: " + data);
-        }).fail(function(xhr, status, et) {
-            console.log("plot failed");
-            console.log(xhr.responseText);
-            console.log(et);
-            console.log(status);
         });
 
     };
@@ -1949,10 +1943,6 @@ var EraseTriangleAction = {
             
         }
         invertedIndex.removeAll(triple.id);
-        // shapes.get(shapeId).remove(triple);
-        
-        // // delete invertedIndex[triple];
-        // invertedIndex.remove(triple.id, shapeId);
         return "Erase";
     },
     "backward": function(triple, shapeIds) {
@@ -2062,7 +2052,6 @@ function Action(invoker, keyHandler) {
         project.activeLayer.scale(1 + (event.delta.y * 0.005), event.point);
     }
 
-
     
     function addTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
@@ -2082,7 +2071,6 @@ function Action(invoker, keyHandler) {
     }
 
     function findShape(event) {
-        // console.log(invertedIndex);
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         if (!isValidTriple(triple)) {
             return;
@@ -2099,18 +2087,15 @@ function Action(invoker, keyHandler) {
             //do this after so we can update the ui
             current.shape = shapeId;
         }
-
-        
-        console.log("current shape = " + current.shape);
        
     }
 
     function removeTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         if (invertedIndex.has(current.triple.id) && triple.id !== current.triple.id) {
-                // wm("removing at" + triple.id);
+
             if (shapes.get(current.shape).has(current.triple)) {
-                    // wm("deleted at " + triple.id);
+
                 var action = ExtendShapeAction;
                 if (shapes.get(current.shape).values().length === 1) {
                     action = CreateTriangleAction;
@@ -2124,7 +2109,7 @@ function Action(invoker, keyHandler) {
 
     function selectShapes(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
-        var sid = shapes.highestFromArray(invertedIndex.at(triple.id)); //invertedIndex[triple.id];
+        var sid = shapes.highestFromArray(invertedIndex.at(triple.id));
 
         if (sid === undefined) {
             current.selected.clear();
@@ -2186,23 +2171,7 @@ function Action(invoker, keyHandler) {
 
         current.triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
 
-
-        // console.log(event);
-        // if (event.type === "mousedown") {
-        //     var shapeundermouse = shapes.highestFromArray(invertedIndex.at(current.triple.id));
-        //     console.log("shape under = " + shapeundermouse);
-        //     console.log("selected = " + current.selected.values());
-        //     if (!modifierStates["shift"] ||
-        //         !current.selected.has(shapeundermouse)) {
-        //         // invertedIndex.at(current.triple.id) === undefined) {
-        //         console.log("Clearned");
-        //         current.selected.clear();
-        //     }
-        //     // return;
-        // }
-
         // make the marque
-        
         var p1 = project.activeLayer.globalToLocal(event.downPoint);
         var p2 = project.activeLayer.globalToLocal(event.point);
 
@@ -2253,7 +2222,6 @@ function Action(invoker, keyHandler) {
     function marqueShapesUp(event) {
         marqueRect.visible = false;
     }
-
 
 
     var offsetRect = new Path.Rectangle(new Point(), new Point());
@@ -2348,7 +2316,6 @@ function Action(invoker, keyHandler) {
         else if (!pushedMode && currentKey === event.key && lastKey === event.key) {
             // we have repeated
             pushedMode = lastKey;
-            // console.log("pushed " + lastKey + "(" + currentKey + ")");
         }
         else {
 
@@ -2367,11 +2334,8 @@ function Action(invoker, keyHandler) {
             lastKey = currentKey;
             currentKey = event.key;
         }
-        // console.log(lastKey + " -> " +currentKey); // + " " + event);
 
-
-        
-        return ret; // might be false in which caaase don't do what you normally do
+        return ret; // might be false in which case don't do what you normally do
     }
 
     tool.onKeyUp = function onKeyUp(event) {
@@ -2383,18 +2347,16 @@ function Action(invoker, keyHandler) {
         if (modifierStates[event.key] !== undefined) {
             modifierStates[event.key] = false;
         }
-        // event.preventDefault();
     }
 
+    // make the scroll event, so it behaves like the others
+    
     tool.scrollEvent = new ToolEvent(tool, "mousescroll", new MouseEvent());
     tool.scrollEvent.point = new Point();
     tool.scrollEvent.delta = new Point();
 
     $("#canvas").bind('mousewheel DOMMouseScroll', function(event){
-
-        // console.log(event.originalEvent.deltaX + ", " + event.originalEvent.deltaY + ", " +event.originalEvent.wheelDelta);
         tool.scrollEvent.point.set(event.offsetX, event.offsetY);
-        // tool.scrollEvent.delta = event.originalEvent.wheelDelta / 1900.0;
         tool.scrollEvent.delta.x = -event.originalEvent.deltaX * 0.5;
         tool.scrollEvent.delta.y = -event.originalEvent.deltaY * 0.5;
         tool.onMouseScroll(tool.scrollEvent);
@@ -2418,11 +2380,6 @@ function setTriangleSize(s) {
     gridGroup = drawGrid(gridGroup);
 
     db = createDatabase(new Size(nx, ny)); 
-    
-    // for (var shapeId in shapes._values) {
-    //     debugger;
-    //     shapes.get(shapeId).draw();
-    // }
 
     shapes.removeOutside(db, invertedIndex);
 
@@ -2506,15 +2463,6 @@ keyHandler.add(["command", "d"], function() {
     console.log("requested");
 });
 
-// keyHandler.add(["command", "l"], function() {
-//     var lines = linesForShape(60, shapes.get(0).outline);
-//     for (var i = 0; i < lines.length; i+=2) {
-//         var l = new Path.Line(lines[i], lines[i+1]);
-//         l.strokeColor = 'black';
-        
-//     }
-//     console.log(lines);
-// });
 
 var action = new Action(invoker, keyHandler);
 
@@ -2544,99 +2492,3 @@ function wm(m) {
         $('#messages p:lt(2)').remove();
     }
 }
-
-
-
-$("#download").click(function(e) {
-
-    var data = shapes.getState();
-    
-    var anchor = $(this);
-    var req = $.ajax({
-        url: "http://localhost:5000/save/",
-        // asnyc: false,
-        type: "POST",
-        dataType: "json",
-        crossDomain: true,
-        data: {
-            "data": JSON.stringify(data),
-        },
-    }).done(function(data) {
-
-        window.location = "http://127.0.0.1:5000/download/" + data.fileid;
-        
-    }).fail(function(xhr, status, et) {
-        console.log("save failed");
-        console.log(xhr.responseText);
-        console.log(et);
-        console.log(status);
-    });
-
-    e.preventDefault();
-    return false;
-});
-
-
-$("#upload").click(function(e){
-
-    e.preventDefault();
-   $("#fileupload").trigger('click');
-});
-
-function loadState(obj) {
-    console.log("loading");
-    console.log(obj);
-
-    shapes.loadState(JSON.parse(obj));
-    var shapeIds = shapes.shapeIds();
-    shapeIds.forEach(function(shapeId) {
-        var shape = shapes.get(shapeId);
-        invertedIndex.addShape(shape);
-        ui.addShape(shape);
-    });
-    
-
-}
-
-$("input:file").change(function (){
-
-    var file = $(this).prop("files")[0];
-    var fileReader = new FileReader();
-    fileReader.onload = function(event) {
-        loadState(event.target.result);
-        invoker.clear();
-        view.draw();
-    };
-
-    fileReader.readAsText(file);
-});
-
-
-$("#gridsize").on("mousemove",function(e){
-    // console.log();
-    var newsize = $(this).val();
-    if (newsize !== current.triangleSize) {
-        setTriangleSize(newsize);
-    }
-});
-
-$("#gridcolour").on("mousemove",function(e){
-    // console.log();
-    console.log(gridGroup.strokeColor);
-    gridGroup.strokeColor = new Color($(this).val() * 0.01);
-    view.draw();
-
-});
-
-// $("#slider").slider();
-
-// $.ajax({ //my ajax request
-//         url: "http://localhost:5000",
-//         type: "POST",
-//         cache: false,
-//         dataType: "json",
-//         crossDomain: true,
-//         data: { "a": "asdf", },
-// }).done(function(data) {
-//     console.log("done with data: " + data);
-// }).fail(function(xhr, status, et) { console.log("failed"); console.log(xhr.responseText); console.log(et); console.log(status); });
