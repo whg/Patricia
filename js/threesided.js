@@ -1361,7 +1361,7 @@ function Shapes() {
     };
 
     this.add = function(key) {
-        var shape = new TShape(key, Object.keys(shapes).length);
+        var shape = new TShape(key, ids);
         shapes[key] = shape;
         ui.addShape(shape);
     };
@@ -1422,14 +1422,17 @@ function Shapes() {
         shapes = {};
     };
     
-    this.loadState = function(obj) {
+    this.loadState = function(dataObj) {
 
         this.clear();
 
-        for (var shapeId in obj) {
-            shapes[shapeId] = new TShape(obj[shapeId]);
+        var highestId = 0;
+        for (var shapeId in dataObj) {
+            shapes[shapeId] = new TShape(dataObj[shapeId]);
             shapes[shapeId].draw();
+            highestId = Math.max(highestId, shapeId);
         }
+        ids = highestId + 1;
     };
     
 
