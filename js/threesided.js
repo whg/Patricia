@@ -1676,6 +1676,7 @@ function Plot() {
         
         var data = sortIntoPens(shapeIds);
         console.log("data = " + data);
+
         var req = $.ajax({
             url: "http://localhost:5000/plot/",
             type: "POST",
@@ -1761,6 +1762,20 @@ function offsetsForShape(shape) {
     requestMade = true;
 }
 
+function plotOuterOffsets() {
+    var lines = allOuters.children.map(function(e) {
+        return e.segments;
+    });
+
+    var req = $.ajax({
+        url: "http://localhost:5000/plot/",
+        type: "POST",
+        crossDomain: true,
+        data: {
+            "data": JSON.stringify({1: lines}),
+        },
+    });
+}
 
 var allOuters = new Group();
 function offsetsForAllOuter(spacing, drawGroup, maxLines, boundingRect) {
@@ -1779,7 +1794,7 @@ function offsetsForAllOuter(spacing, drawGroup, maxLines, boundingRect) {
 
     data["outer"] = [];
     if (boundingRect !== undefined) {
-        data["outer"] = boundingRect.segments.map(segmentToXY);
+        // data["outer"] = boundingRect.segments.map(segmentToXY);
     }
 
     if (maxLines === undefined) {
@@ -2255,7 +2270,7 @@ function Action(invoker, keyHandler) {
     
     function offsetRectUp(event) {
         console.log(event);
-        offsetsForAllOuter(4, allOuters, 50, offsetRect);
+        offsetsForAllOuter(4, allOuters, 30, offsetRect);
         offsetRect.remove();
     }
 
@@ -2486,7 +2501,8 @@ keyHandler.add(["command", "a"], function() {
 
 keyHandler.add(["command", "d"], function() {
     // offsetsForShape(shapes.get(1));
-    offsetsForAllOuter(4, allOuters, 50, boundingRect);
+    // offsetsForAllOuter(4, allOuters, 50, boundingRect);
+    plotOuterOffsets();
     console.log("requested");
 });
 
@@ -2573,10 +2589,13 @@ function loadState(obj) {
 
     shapes.loadState(JSON.parse(obj));
     var shapeIds = shapes.shapeIds();
-    for (var i = 0; i < shapeIds.length; i++) {
-        invertedIndex.addShape(shapes.get(shapeIds[i]));
-    }
-    // ui.updateShapes(shapes);
+    shapeIds.forEach(function(shapeId) {
+        var shape = shapes.get(shapeId);
+        invertedIndex.addShape(shape);
+        ui.addShape(shape);
+    });
+    
+
 }
 
 $("input:file").change(function (){
