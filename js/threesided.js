@@ -1172,7 +1172,9 @@ function TShape(idOrData, order) {
         for (var i = 0, l = triples.length; i < l; i++) {
             this.add(new Triple(triples[i]));
         }
-        this._values
+        if (idOrData.appearence) {
+            this.appearence = idOrData.appearence;
+        }
     }
 
     
@@ -1186,7 +1188,7 @@ function TShape(idOrData, order) {
         // visible: false,
     });
 
-    this.appearence = {
+    this.appearence = this.appearence || {
         spacing: Math.random()*5+2,
         angle: Math.random()*180,
         filltype: "hatch",
@@ -1280,6 +1282,7 @@ function TShape(idOrData, order) {
             "id": this.id,
             "order": this.order,
             "name": this.name,
+            "appearence": this.appearence,
         };
     };
 
@@ -1783,6 +1786,7 @@ function offsetsForAllOuter(spacing, drawGroup, maxLines, boundingRect) {
     var data = {};
     data["inner"] = shapeIds.map(function(shapeId) {
         var shape = shapes.get(shapeId);
+        // shape.draw(true);
         var outer = shape.outline.children[0].clone();
         // outer.reverse();
         return outer.segments.map(segmentToXY);
@@ -1791,7 +1795,7 @@ function offsetsForAllOuter(spacing, drawGroup, maxLines, boundingRect) {
 
     data["outer"] = [];
     if (boundingRect !== undefined) {
-        // data["outer"] = boundingRect.segments.map(segmentToXY);
+        data["outer"] = boundingRect.segments.map(segmentToXY);
     }
 
     if (maxLines === undefined) {
@@ -2368,47 +2372,6 @@ function Action(invoker, keyHandler) {
 
 }
 
-
-project.activeLayer.transformContent = false;
-
-
-
-function setTriangleSize(s) {
-    
-    side = s;
-    alt = Math.sqrt(3) * side * 0.5;
-    nx = Math.floor(boundsSize.width / alt) + 1;
-    ny = Math.floor(boundsSize.height / side * 2) + 1;
-
-    gridGroup = drawGrid(gridGroup);
-
-    db = createDatabase(new Size(nx, ny)); 
-
-    shapes.removeOutside(db, invertedIndex);
-
-    shapes.draw();
-    current.triangleSize = s;
-    project.view.draw();
-}
-
-
-
-
-var gridGroup = new Group();
-// gridGroup = drawGrid(gridGroup);
-
-var nx = 0, ny = 0, side = 0, alt = 0;
-var boundsSize = new Size(1520, 1032);
-
-var boundingRect = new Path.Rectangle(new Point(0, 0), boundsSize);
-boundingRect.strokeColor = '#b00';
-
-var db = {}; //createDatabase(new Size(nx, ny)); 
-var invertedIndex = new InvertedIndex;
-var shapes = new Shapes();
-var ui = new UI();
-var plot = new Plot();
-
 function Current() {
     this.triple = null;
     var shape = null;
@@ -2436,6 +2399,44 @@ function Current() {
 
     return this;
 }
+
+project.activeLayer.transformContent = false;
+
+
+
+function setTriangleSize(s) {
+    
+    side = s;
+    alt = Math.sqrt(3) * side * 0.5;
+    nx = Math.floor(boundsSize.width / alt) + 1;
+    ny = Math.floor(boundsSize.height / side * 2) + 1;
+
+    gridGroup = drawGrid(gridGroup);
+
+    db = createDatabase(new Size(nx, ny)); 
+
+    shapes.removeOutside(db, invertedIndex);
+
+    shapes.draw();
+    current.triangleSize = s;
+    project.view.draw();
+}
+
+
+var gridGroup = new Group();
+// gridGroup = drawGrid(gridGroup);
+
+var nx = 0, ny = 0, side = 0, alt = 0;
+var boundsSize = new Size(1520, 1032);
+
+var boundingRect = new Path.Rectangle(new Point(0, 0), boundsSize);
+boundingRect.strokeColor = '#b00';
+
+var db = {}; //createDatabase(new Size(nx, ny)); 
+var invertedIndex = new InvertedIndex;
+var shapes = new Shapes();
+var ui = new UI();
+var plot = new Plot();
 
 var current = new Current();
 

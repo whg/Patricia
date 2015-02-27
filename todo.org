@@ -1,7 +1,6 @@
 
 
 * TODO backspace delete shape
-* TODO only 8 colours
 * TODO copy and paste
 * TODO rotate
 * TODO better modes for operation
@@ -9,6 +8,10 @@
 * TODO layers
 so you can move shapes off the main grid
 * TODO rasterise objects when not editing
+* DONE load all shape attributes
+CLOSED: [2015-02-27 Fri 18:24]
+* DONE when loading, update shape id counter
+CLOSED: [2015-02-12 Thu 10:46]
 * DONE [#A] plot only single line
 CLOSED: [2015-02-10 Tue 15:21]
 done for different colours
