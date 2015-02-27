@@ -93,6 +93,10 @@ function extend(subclass, superclass) {
     return subclass;
 }
 
+function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+
 
 function mergeObjects() {
     var r = {};
@@ -1536,7 +1540,7 @@ function UI() {
     });
 
 
-
+    
     function toggleDetails(arrow) {
         arrow.toggleClass("arrow-down");
         arrow.siblings("span").toggle();
@@ -1547,29 +1551,36 @@ function UI() {
         details.toggle();
     }
 
-    function inputRangeUpdate(e) {
+    function inputRangeUpdate(e, commit) {
         var name = $(this).attr("name");
         var value = parseInt($(this).val());
         var shapeId = parseInt($(this).parents("li").attr("key"));
         var shape = shapes.get(shapeId);
 
         if (shape.appearence[name] != value) {
-        
+            
             shapes.get(shapeId).appearence[name] = value;
             console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
             shapes.get(shapeId).draw();
             view.draw();
         }
-    }
 
+        if (commit && startedValue !== value) {        
+            invoker.push(ChangeAppearenceAction, "forward", [shapeId, name, startedValue, value]);
+        }
+        
+    }
+    var startedValue = null;
+    
     $("#shapes").on("mousedown", "input[type=range]", function(e){
-        console.log(this);
         console.log("bind");
+        startedValue = parseInt($(this).val());
         $(this).bind("mousemove", inputRangeUpdate);
     });
 
     $("#shapes").on("mouseup", "input[type=range]", function(e){
         console.log("unbind");
+        inputRangeUpdate.apply(this,[null, true]);
         $(this).unbind("mousemove", inputRangeUpdate);
     });
     
@@ -1578,18 +1589,19 @@ function UI() {
     });
 
     $("#shapes").on("change", "select", function() {
-        // toggleDetails($(this));
+
         var name = $(this).attr("name");
         var value = $(this).val();
         var shapeId = $(this).parents("li").attr("key");
+        var fromValue = shapes.get(shapeId).appearence[name];
 
-        shapes.get(shapeId).appearence[name] = value;
-
-        shapes.get(shapeId).draw();
-        view.draw();
-
+        invoker.push(ChangeAppearenceAction, "forward", [shapeId, name, fromValue, value]);
         console.log("name = " + name + ", shape = " + shapeId + ", value = " + value);
     });
+
+    // $("#shapes").on("stop", "input[type=range]", function() {
+        // console.log(this);
+    // });
 
 
     ////////////////////////////////////////
@@ -1970,13 +1982,29 @@ var EraseTriangleAction = {
     },
 };
 
+function changeAttribute(shapeId, attribute, value) {
+    var shape = shapes.get(shapeId);
+    shape.appearence[attribute] = value;
+    shape.draw();
+    view.draw();
+}
+
+var ChangeAppearenceAction = {
+    "forward": function(shapeId, attribute, fromValue, toValue) {
+        changeAttribute(shapeId, attribute, toValue);
+    },
+    "backward": function(shapeId, attribute, fromValue, toValue) {
+        changeAttribute(shapeId, attribute, fromValue);
+    },
+};
+
 
 function Invoker() {
     var commands = [];
     var pos = 0;
 
     this.push = function(action, direction, args) {
-
+        console.log(args);
         var comm = new Command(action, direction, args);
 
         if (pos !== commands.length) {
@@ -2265,11 +2293,15 @@ function Action(invoker, keyHandler) {
     }
 
     function cloneCurrentAppearence(event) {
-
+        
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         var cloneTo = shapes.highestFromArray(invertedIndex.at(triple.id));
-        if (cloneTo) {
-            var cloningFromShapeId = shapes.highestFromArray(invertedIndex.at(current.triple.id));
+        console.log(cloneTo);
+        if (modifierStates["command"]) {
+            current.shape = cloneTo;
+        }
+        else if (cloneTo !== undefined) {
+            var cloningFromShapeId = current.shape;
             shapes.get(cloneTo).cloneAppearence(shapes.get(cloningFromShapeId));
             shapes.get(cloneTo).draw();
         }
