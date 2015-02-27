@@ -2275,6 +2275,11 @@ function Action(invoker, keyHandler) {
         
     }
 
+    function escape() {
+        current.selected.clear();
+    }
+    
+
     var none = function() {};
     
     var modes = {
@@ -2352,6 +2357,10 @@ function Action(invoker, keyHandler) {
                 ret = keyHandler.call(event);
 
             }
+        }
+
+        if (event.key === "escape") {
+            escape();
         }
 
         if (modes[event.key] !== undefined) {
