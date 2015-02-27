@@ -1196,6 +1196,11 @@ function TShape(idOrData, order) {
         _outline: 1,
     };
 
+    this.cloneAppearence = function(other) {
+        for (var key in other.appearence) {
+            this.appearence[key] = other.appearence[key];
+        }
+    }
     // we want to know when fill and outline in appearence
     // are set, so define getters and setters
     
@@ -2259,6 +2264,17 @@ function Action(invoker, keyHandler) {
         };
     }
 
+    function cloneCurrentAppearence(event) {
+        var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
+        var cloneTo = shapes.highestFromArray(invertedIndex.at(triple.id));
+        if (cloneTo) {
+            var cloningFromShapeId = shapes.highestFromArray(invertedIndex.at(current.triple.id));
+            shapes.get(cloneTo).cloneAppearence(shapes.get(cloningFromShapeId));
+            shapes.get(cloneTo).draw();
+        }
+        
+    }
+
     var none = function() {};
     
     var modes = {
@@ -2270,6 +2286,7 @@ function Action(invoker, keyHandler) {
         "m": createMouseMode(none, selectShapes, moveShapes, pan, none),
         "e": createMouseMode(none, eraseTriangle, eraseTriangle, pan, none),
         "b": createMouseMode(none, none, offsetRectDrag, none, offsetRectUp),
+        "c": createMouseMode(none, cloneCurrentAppearence, cloneCurrentAppearence, pan, none),
     };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
