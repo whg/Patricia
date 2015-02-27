@@ -1,14 +1,14 @@
 body {
-    background: #ddd;
+    background: #fff;
     font-family: Menlo;
     margin: 0px;
 }
 
 
-#canvas {
+canvas {
     background: white;
     /* width: 100%; //800px; */
-    /* height: 600px; */
+    /* height: calc(100% - 10px) */
     /* position: relative; */
     /* float: left; */
 }
@@ -27,6 +27,16 @@ body {
   height: 200px;
   left: calc(100% - #{$width} - #{$margin});
   /* padding: 5px; */
+}
+
+#thanks {
+    $height: 10px;
+    position: absolute;
+    top: calc(100% - #{$height});
+    height: $height;
+    font-size: $height;
+    color: #555;
+    background: #fff;
 }
 
 
