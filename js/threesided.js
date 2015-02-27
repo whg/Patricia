@@ -2265,6 +2265,7 @@ function Action(invoker, keyHandler) {
     }
 
     function cloneCurrentAppearence(event) {
+
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         var cloneTo = shapes.highestFromArray(invertedIndex.at(triple.id));
         if (cloneTo) {
@@ -2335,6 +2336,11 @@ function Action(invoker, keyHandler) {
 
         var ret = true;
 
+        // windows?
+        if (event.key === "control") {
+            event.key = "command";
+        }
+        
         console.log(event);
         // modifiers are treated seperately because they
         // don't repeat the call to onKeyDown
@@ -2362,6 +2368,8 @@ function Action(invoker, keyHandler) {
         if (event.key === "escape") {
             escape();
         }
+
+        
 
         if (modes[event.key] !== undefined) {
             lastKey = currentKey;
