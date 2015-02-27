@@ -1,24 +1,34 @@
 body {
     background: #ddd;
     font-family: Menlo;
+    margin: 0px;
 }
+
 
 #canvas {
     background: white;
-    width: 800px;
-    height: 600px;
-    float: left;
+    /* width: 100%; //800px; */
+    /* height: 600px; */
+    /* position: relative; */
+    /* float: left; */
 }
+
 
 #sidebar {
-    float: left;
-    margin: 10px;
-    /* height: 300px; */
+  $width: 250px;
+  $margin: 25px;
+  position: absolute;
+  background: rgba(0,0,0,0.2);
+    /* float: right; */
+      /* left: 80%; */
+  top: $margin;
+      /* margin: 10px; */
+  width: $width;
+  height: 200px;
+  left: calc(100% - #{$width} - #{$margin});
+  /* padding: 5px; */
 }
 
-/* #shapes { */
-/*     margin-top: 350px; */
-/* } */
 
 #messages {
   display: none;
