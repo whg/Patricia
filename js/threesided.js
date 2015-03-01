@@ -1510,7 +1510,8 @@ function UI() {
 
     var currentExpandedShape = false;
     function highlightDiv(div, highlight) {
-        div.css("border-left", "4px solid " + (highlight ? "#3dc57e" : "#fff"));
+        // div.css("border-left", "4px solid " + (highlight ? "#3dc57e" : "#fff"));
+        div.toggleClass("selected", highlight);
     }
     this.setCurrentShape = function(shapeId) {
         if (currentExpandedShape) {
@@ -1677,6 +1678,14 @@ function UI() {
         gridGroup.strokeColor = new Color($(this).val() * 0.01);
         view.draw();
 
+    });
+
+
+    ////////////////////////////////////////////////////////
+    // toolbar
+    
+    $(".tool").click(function(event) {
+        
     });
 
 }
@@ -2282,16 +2291,6 @@ function Action(invoker, keyHandler) {
         offsetRect.remove();
     }
 
-    function createMouseMode(init, mouseDown, mouseDrag, mouseScroll, mouseUp) {
-        return {
-            init: init,
-            mouseDown: mouseDown,
-            mouseDrag: mouseDrag,
-            mouseScroll: mouseScroll,
-            mouseUp: mouseUp,
-        };
-    }
-
     function cloneCurrentAppearence(event) {
         
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
@@ -2311,21 +2310,50 @@ function Action(invoker, keyHandler) {
     function escape() {
         current.selected.clear();
     }
-    
 
+
+    function callEventFactory(eventType) {
+        
+        return function(event) {
+            if (modifierStates["option"]) {
+                current.mode.option[eventType].apply(null, [event]);
+            }
+            else {
+                current.mode[eventType].apply(null, [event])
+            }
+            if (eventType == "onMouseScroll") {
+                view.draw();
+            }
+        }
+    }
+
+    function createMouseMode(key, mouseDown, mouseDrag, mouseScroll, mouseUp) {
+        return {
+            key: key,
+            onMouseDown: mouseDown,
+            onMouseDrag: mouseDrag,
+            onMouseScroll: mouseScroll,
+            onMouseUp: mouseUp,
+        };
+    }
     var none = function() {};
     
-    var modes = {
-        "v": createMouseMode(none, none, pan, zoom, none),
-        "a": createMouseMode(none, findShape, addTriangle, pan, none),
-        "s": createMouseMode(none, selectShapes, marqueShapes, pan, marqueShapesUp),
-        "option": createMouseMode(none, none, pan, zoom, none),
-        "d": createMouseMode(none, findShape, removeTriangle, pan, none),
-        "m": createMouseMode(none, selectShapes, moveShapes, pan, none),
-        "e": createMouseMode(none, eraseTriangle, eraseTriangle, pan, none),
-        "b": createMouseMode(none, none, offsetRectDrag, none, offsetRectUp),
-        "c": createMouseMode(none, cloneCurrentAppearence, cloneCurrentAppearence, pan, none),
+    this.modes = {
+        "view": createMouseMode("v", none, pan, zoom, none),
+        "draw": createMouseMode("a", findShape, addTriangle, pan, none),
+        "select": createMouseMode("s", selectShapes, marqueShapes, pan, marqueShapesUp),
+        // createMouseMode("option", none, pan, zoom, none),
+        "shink": createMouseMode("d", findShape, removeTriangle, pan, none),
+        "move": createMouseMode("m", selectShapes, moveShapes, pan, none),
+        "erase": createMouseMode("e", eraseTriangle, eraseTriangle, pan, none),
+        "offsetRect": createMouseMode("b", none, offsetRectDrag, none, offsetRectUp),
+        "clone": createMouseMode("c", cloneCurrentAppearence, cloneCurrentAppearence, pan, none),
     };
+
+    var keys = {};
+    for (var name in this.modes) {
+        keys[this.modes[name].key] = name;
+    }
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
     var modifiers = Object.keys(modifierStates);
@@ -2344,26 +2372,32 @@ function Action(invoker, keyHandler) {
     var pushedMode = false;
 
     var tool = new Tool();
+
+    var mouseEvents = ["onMouseDown", "onMouseUp", "onMouseDrag", "onMouseScroll"];
+
+    mouseEvents.forEach(function(eventType){
+        tool[eventType] = callEventFactory(eventType);
+    });
     
-    tool.onMouseDrag = function(event) {
-        modes[currentKey].mouseDrag(event);
-    }
+    // tool.onMouseDrag = function(event) {
+    //     modes[currentKey].mouseDrag(event);
+    // }
 
-    tool.onMouseDown = function(event) {
-        modes[currentKey].mouseDown(event);
-    }
+    // tool.onMouseDown = function(event) {
+    //     modes[currentKey].mouseDown(event);
+    // }
 
-    tool.onMouseScroll = function(event) {
-        modes[currentKey].mouseScroll(event);
+    // tool.onMouseScroll = function(event) {
+    //     modes[currentKey].mouseScroll(event);
 
-        paper.view.draw();
-    }
+    //     paper.view.draw();
+    // }
 
-    tool.onMouseUp = function(event) {
-        modes[currentKey].mouseUp(event);
-    }
+    // tool.onMouseUp = function(event) {
+    //     modes[currentKey].mouseUp(event);
+    // }
     
-
+    var that = this;
     tool.onKeyDown = function onKeyDown(event) {
 
         var ret = true;
@@ -2380,22 +2414,22 @@ function Action(invoker, keyHandler) {
             pushedMode = currentKey;
             modifierStates[event.key] = true;
         }
-        else if (!pushedMode && currentKey === event.key && lastKey === event.key) {
-            // we have repeated
-            pushedMode = lastKey;
-        }
-        else {
+        // else if (!pushedMode && currentKey === event.key && lastKey === event.key) {
+        //     // we have repeated
+        //     pushedMode = lastKey;
+        // }
+        // else {
 
-            //this means it's just a single press of a non modifier
-            if (atLeastOneModifier()) {
-                for (var key in modifierStates) {
-                    event.modifiers[key] = modifierStates[key];
-                }
+        //     //this means it's just a single press of a non modifier
+        //     if (atLeastOneModifier()) {
+        //         for (var key in modifierStates) {
+        //             event.modifiers[key] = modifierStates[key];
+        //         }
                 
-                ret = keyHandler.call(event);
+        //         ret = keyHandler.call(event);
 
-            }
-        }
+        //     }
+        // }
 
         if (event.key === "escape") {
             escape();
@@ -2403,9 +2437,14 @@ function Action(invoker, keyHandler) {
 
         
 
-        if (modes[event.key] !== undefined) {
-            lastKey = currentKey;
-            currentKey = event.key;
+        // if (this.modes[event.key] !== undefined) {
+        //     lastKey = currentKey;
+        //     currentKey = event.key;
+
+        // }
+
+        if (keys[event.key] !== undefined) {
+            current.mode = that.modes[keys[event.key]];
         }
 
         return ret; // might be false in which case don't do what you normally do
@@ -2438,11 +2477,12 @@ function Action(invoker, keyHandler) {
 
 }
 
-function Current() {
+function Current(mode) {
     this.triple = null;
     var shape = null;
     this.selected = new Set();
     this.triangleSize = 50;
+    this.mode = mode;
 
     Object.defineProperty(this, 'shape', {
         get: function() {
@@ -2504,10 +2544,6 @@ var shapes = new Shapes();
 var ui = new UI();
 var plot = new Plot();
 
-var current = new Current();
-
-
-
 var invoker = new Invoker();
 var keyHandler = new KeyComboHandler();
 keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invoker.redo(); });
@@ -2535,6 +2571,8 @@ keyHandler.add(["command", "d"], function() {
 
 
 var action = new Action(invoker, keyHandler);
+
+var current = new Current(action.modes["draw"]);
 
 setTriangleSize($("#gridsize").val());
 gridGroup.strokeColor = new Color($("#gridcolour").val() * 0.01);
