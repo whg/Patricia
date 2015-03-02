@@ -4,4 +4,4 @@ saves/
 plots/
 *.pyc
 .sass-cache/
-*.css.map
+/css/style.css.map
