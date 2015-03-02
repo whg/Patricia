@@ -99,7 +99,8 @@ $selected-colour: rgba(88,247,179, 0.8); //#7ea;
 }
 
 input[type="file"] {
-
+    /* visibility: hidden; */
+    display: none;
     /* opacity: 0; */
 }
 

@@ -1708,7 +1708,17 @@ function UI() {
         highlightedTool = modeName;
         console.log(modeName);
         console.log(highlightedTool);
-    }
+    };
+
+    ////////////////////////////////////////////////////////
+    // history
+
+    this.updateHistory = function(m) {
+        $("#history").append("<p>" + m + "</p>");
+        if ($("#history p").length > 10) {
+            $('#history p:lt(2)').remove();
+        }
+    };
 
 }
 
@@ -1925,6 +1935,7 @@ var CreateTriangleAction = {
         invertedIndex.remove(triple.id, shapeId);
         return "Delete";
     },
+    "name": "Create Triangle",
 };
 
 var ExtendShapeAction = {
@@ -1952,7 +1963,7 @@ var ExtendShapeAction = {
         wm("shink shape at " + triple.id);
         return "Shrink";
     },
-    
+    "name": "Extend Shape",
 };
 
 var MoveShapeAction = {
@@ -1977,9 +1988,10 @@ var MoveShapeAction = {
         return "Move";
     },
     "backward": function(shapeIds, moveTriple){
-        console.log("adfsasdfkljasd " + moveTriple);
+        // console.log("adfsasdfkljasd " + moveTriple);
         return this.forward(shapeIds, moveTriple.inverse());
     },
+    "name": "Move Shape",
 };
 
 var EraseTriangleAction = {
@@ -2009,8 +2021,9 @@ var EraseTriangleAction = {
             invertedIndex.add(triple.id, shapeIds[i]);
             shapes.get(shapeIds[i]).draw();
         }
-      
+        return "Erase";
     },
+    "name": "Erase Triangle",
 };
 
 function changeAttribute(shapeId, attribute, value) {
@@ -2027,6 +2040,7 @@ var ChangeAppearenceAction = {
     "backward": function(shapeId, attribute, fromValue, toValue) {
         changeAttribute(shapeId, attribute, fromValue);
     },
+    "name": "Change Appearence",
 };
 
 
@@ -2035,7 +2049,7 @@ function Invoker() {
     var pos = 0;
 
     this.push = function(action, direction, args) {
-        console.log(args);
+        // console.log(args);
         var comm = new Command(action, direction, args);
 
         if (pos !== commands.length) {
@@ -2043,6 +2057,7 @@ function Invoker() {
         }
 
         commands.push(comm);
+        ui.updateHistory(action.name);
         comm.execute();
         pos++;
     };
@@ -2337,7 +2352,7 @@ function Action(invoker, keyHandler) {
     function callEventFactory(eventType) {
         
         return function(event) {
-            if (modifierStates["option"]) {
+            if (modifierStates["option"] && current.mode.option) {
                 console.log(modifierStates["option"]);
                 current.mode.option[eventType].apply(null, [event]);
             }
@@ -2372,7 +2387,9 @@ function Action(invoker, keyHandler) {
         "clone": createMouseMode("c", cloneCurrentAppearence, cloneCurrentAppearence, pan, none),
     };
 
-    this.modes["draw"].option = this.modes["view"];
+    for (var modeKey in this.modes) {
+        this.modes[modeKey].option = this.modes["view"];
+    }
 
     var modeKeys = {};
     for (var name in this.modes) {
@@ -2404,6 +2421,16 @@ function Action(invoker, keyHandler) {
     mouseEvents.forEach(function(eventType){
         tool[eventType] = callEventFactory(eventType);
     });
+
+
+    function atLeastOneModifier() {
+        for (var key in modifierStates) {
+            if (modifierStates[key]) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     var that = this;
     tool.onKeyDown = function onKeyDown(event) {
@@ -2419,6 +2446,15 @@ function Action(invoker, keyHandler) {
 
         if (event.key in modifierStates) {
             modifierStates[event.key] = true;
+        }
+        else {
+            if (atLeastOneModifier()) {
+                for (var key in modifierStates) {
+                    event.modifiers[key] = modifierStates[key];
+                }
+                
+                ret = keyHandler.call(event);
+            }
         }
 
         if (event.key === "escape") {
