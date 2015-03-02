@@ -1685,8 +1685,30 @@ function UI() {
     // toolbar
     
     $(".tool").click(function(event) {
-        
+        var name = fromTitle($(this).attr("title"));
+        action.selectMode(name);
     });
+
+    function toTitle(s) {
+        return s[0].toUpperCase() + s.substr(1);
+    }
+
+    function fromTitle(s) {
+        return s.toLowerCase();
+    }
+    
+    var highlightedTool = null;
+    this.updateTool = function(modeName) {
+        
+        if (highlightedTool) {
+            $(".tool[title="+toTitle(highlightedTool)+"]").toggleClass("selected", false);
+        }
+
+        $(".tool[title="+toTitle(modeName)+"]").toggleClass("selected", true);
+        highlightedTool = modeName;
+        console.log(modeName);
+        console.log(highlightedTool);
+    }
 
 }
 
@@ -2316,6 +2338,7 @@ function Action(invoker, keyHandler) {
         
         return function(event) {
             if (modifierStates["option"]) {
+                console.log(modifierStates["option"]);
                 current.mode.option[eventType].apply(null, [event]);
             }
             else {
@@ -2327,7 +2350,7 @@ function Action(invoker, keyHandler) {
         }
     }
 
-    function createMouseMode(key, mouseDown, mouseDrag, mouseScroll, mouseUp) {
+    function createMouseMode(key, mouseDown, mouseDrag, mouseScroll, mouseUp, option) {
         return {
             key: key,
             onMouseDown: mouseDown,
@@ -2342,7 +2365,6 @@ function Action(invoker, keyHandler) {
         "view": createMouseMode("v", none, pan, zoom, none),
         "draw": createMouseMode("a", findShape, addTriangle, pan, none),
         "select": createMouseMode("s", selectShapes, marqueShapes, pan, marqueShapesUp),
-        // createMouseMode("option", none, pan, zoom, none),
         "shink": createMouseMode("d", findShape, removeTriangle, pan, none),
         "move": createMouseMode("m", selectShapes, moveShapes, pan, none),
         "erase": createMouseMode("e", eraseTriangle, eraseTriangle, pan, none),
@@ -2350,26 +2372,30 @@ function Action(invoker, keyHandler) {
         "clone": createMouseMode("c", cloneCurrentAppearence, cloneCurrentAppearence, pan, none),
     };
 
-    var keys = {};
+    this.modes["draw"].option = this.modes["view"];
+
+    var modeKeys = {};
     for (var name in this.modes) {
-        keys[this.modes[name].key] = name;
+        modeKeys[this.modes[name].key] = name;
+        this.modes[name].name = name;
     }
+
+    this.selectMode = function(nameOrKey) {
+        var mode = this.modes[modeKeys[nameOrKey]];
+        if (mode !== undefined) {
+            current.mode = mode;
+        }
+        else {
+            // we are presuming name is valid
+            current.mode = this.modes[nameOrKey];
+        }
+        
+        ui.updateTool(current.mode.name);
+    };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
     var modifiers = Object.keys(modifierStates);
     
-    function atLeastOneModifier() {
-        for (var key in modifierStates) {
-            if (modifierStates[key]) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    var currentKey = "a";
-    var lastKey = null;
-    var pushedMode = false;
 
     var tool = new Tool();
 
@@ -2378,24 +2404,6 @@ function Action(invoker, keyHandler) {
     mouseEvents.forEach(function(eventType){
         tool[eventType] = callEventFactory(eventType);
     });
-    
-    // tool.onMouseDrag = function(event) {
-    //     modes[currentKey].mouseDrag(event);
-    // }
-
-    // tool.onMouseDown = function(event) {
-    //     modes[currentKey].mouseDown(event);
-    // }
-
-    // tool.onMouseScroll = function(event) {
-    //     modes[currentKey].mouseScroll(event);
-
-    //     paper.view.draw();
-    // }
-
-    // tool.onMouseUp = function(event) {
-    //     modes[currentKey].mouseUp(event);
-    // }
     
     var that = this;
     tool.onKeyDown = function onKeyDown(event) {
@@ -2408,54 +2416,26 @@ function Action(invoker, keyHandler) {
         }
         
         console.log(event);
-        // modifiers are treated seperately because they
-        // don't repeat the call to onKeyDown
+
         if (event.key in modifierStates) {
-            pushedMode = currentKey;
             modifierStates[event.key] = true;
         }
-        // else if (!pushedMode && currentKey === event.key && lastKey === event.key) {
-        //     // we have repeated
-        //     pushedMode = lastKey;
-        // }
-        // else {
-
-        //     //this means it's just a single press of a non modifier
-        //     if (atLeastOneModifier()) {
-        //         for (var key in modifierStates) {
-        //             event.modifiers[key] = modifierStates[key];
-        //         }
-                
-        //         ret = keyHandler.call(event);
-
-        //     }
-        // }
 
         if (event.key === "escape") {
             escape();
         }
 
         
-
-        // if (this.modes[event.key] !== undefined) {
-        //     lastKey = currentKey;
-        //     currentKey = event.key;
-
-        // }
-
-        if (keys[event.key] !== undefined) {
-            current.mode = that.modes[keys[event.key]];
+        if (modeKeys[event.key] !== undefined) {
+            // current.mode = that.modes[modeKeys[event.key]];
+            that.selectMode(event.key);
         }
 
         return ret; // might be false in which case don't do what you normally do
     }
 
     tool.onKeyUp = function onKeyUp(event) {
-        if (pushedMode) {
-            currentKey = pushedMode;
-            console.log("poped, current key = " + currentKey);
-            pushedMode = false;
-        }
+
         if (modifierStates[event.key] !== undefined) {
             modifierStates[event.key] = false;
         }
@@ -2477,12 +2457,11 @@ function Action(invoker, keyHandler) {
 
 }
 
-function Current(mode) {
+function Current() {
     this.triple = null;
     var shape = null;
     this.selected = new Set();
     this.triangleSize = 50;
-    this.mode = mode;
 
     Object.defineProperty(this, 'shape', {
         get: function() {
@@ -2572,7 +2551,8 @@ keyHandler.add(["command", "d"], function() {
 
 var action = new Action(invoker, keyHandler);
 
-var current = new Current(action.modes["draw"]);
+var current = new Current();
+action.selectMode("draw")
 
 setTriangleSize($("#gridsize").val());
 gridGroup.strokeColor = new Color($("#gridcolour").val() * 0.01);

@@ -1,21 +1,60 @@
 body {
-  background: #ddd;
-  font-family: Menlo; }
+  background: #fff;
+  font-family: Menlo;
+  margin: 0px; }
 
-#canvas {
+canvas {
   background: white;
-  width: 800px;
-  height: 600px;
-  float: left; }
+  /* width: 100%; //800px; */
+  /* height: calc(100% - 10px) */
+  /* position: relative; */
+  /* float: left; */ }
 
 #sidebar {
-  float: left;
-  margin: 10px;
-  /* height: 300px; */ }
+  position: absolute;
+  background: rgba(200, 200, 200, 0.2);
+  /* float: right; */
+  /* left: 80%; */
+  top: 15px;
+  /* margin: 10px; */
+  width: 250px;
+  /* height: 200px; */
+  left: calc(100% - 250px - 15px);
+  /* padding: 5px; */ }
+  #sidebar p {
+    margin: 0px;
+    font-size: 12px;
+    /* padding: 0px; */ }
 
-/* #shapes { */
-/*     margin-top: 350px; */
-/* } */
+#thanks {
+  position: absolute;
+  top: calc(100% - 10px);
+  height: 10px;
+  font-size: 10px;
+  color: #555;
+  background: #fff; }
+
+.selected {
+  background: rgba(88, 247, 179, 0.8) !important; }
+
+#toolbar {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  /* width: 24px; */
+  /* height:; */
+  /* background: $overlay-background; */ }
+  #toolbar .tool {
+    width: 24px;
+    height: 24px;
+    /* margin-bottom: 5px; */
+    padding: 5px;
+    display: block;
+    background: rgba(200, 200, 200, 0.2); }
+
+.tool:hover {
+  cursor: pointer; }
+
 #messages {
   display: none;
   height: 250px; }
@@ -38,22 +77,28 @@ body {
 input[type="file"] {
   /* opacity: 0; */ }
 
-#shapes li {
-  list-style: none; }
-#shapes .shape {
-  border-left: 4px solid #fff; }
-#shapes span {
-  font-size: 16px; }
-#shapes .shape-details {
-  display: none;
-  font-size: 12px; }
-#shapes input {
-  font-family: Menlo;
-  font-size: 14px; }
-#shapes .title form {
-  display: inline; }
-  #shapes .title form input {
-    display: none; }
+#shapes {
+  height: 200px;
+  overflow-y: scroll; }
+  #shapes li {
+    list-style: none; }
+  #shapes .shape {
+    border-left: 5px solid transparent; }
+  #shapes .selected {
+    border-left: 5px solid rgba(88, 247, 179, 0.8) !important;
+    background: none !important; }
+  #shapes span {
+    font-size: 16px; }
+  #shapes .shape-details {
+    display: none;
+    font-size: 12px; }
+  #shapes input {
+    font-family: Menlo;
+    font-size: 14px; }
+  #shapes .title form {
+    display: inline; }
+    #shapes .title form input {
+      display: none; }
 
 .arrow, .arrow-down {
   display: inline-block;
@@ -61,6 +106,7 @@ input[type="file"] {
   height: 0;
   margin: 1px;
   margin-left: 6px;
+  margin-right: 5px;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
   border-left: 8px solid #444; }
@@ -72,9 +118,9 @@ input[type="file"] {
   margin-bottom: -4px;
   margin-left: 4px; }
 
-.shape {
-  background: #fff; }
-
+/* .shape { */
+/*   background: #fff; */
+/* } */
 .shape-details {
   margin: 5px; }
 
