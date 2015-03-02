@@ -14,18 +14,25 @@ canvas {
 }
 
 
+$overlay-margin: 15px;
+$overlay-background: rgba(200,200,200, 0.2);
 #sidebar {
   $width: 250px;
-  $margin: 25px;
   position: absolute;
-  background: rgba(0,0,0,0.2);
+  background: $overlay-background;
     /* float: right; */
       /* left: 80%; */
-  top: $margin;
+  top: $overlay-margin;
       /* margin: 10px; */
   width: $width;
-  height: 200px;
-  left: calc(100% - #{$width} - #{$margin});
+  /* height: 200px; */
+  left: calc(100% - #{$width} - #{$overlay-margin});
+  p {
+      margin: 0px;
+      font-size: 12px;
+      /* padding: 0px; */
+      
+  }
   /* padding: 5px; */
 }
 
@@ -37,6 +44,34 @@ canvas {
     font-size: $height;
     color: #555;
     background: #fff;
+    
+}
+
+$selected-colour: rgba(88,247,179, 0.8); //#7ea;
+
+.selected {
+    background: $selected-colour !important;
+}
+
+#toolbar {
+    position: absolute;
+    top: $overlay-margin;
+    left: $overlay-margin;
+    /* width: 24px; */
+    /* height:; */
+    /* background: $overlay-background; */
+    .tool {
+        width: 24px;
+        height: 24px;
+        /* margin-bottom: 5px; */
+        padding: 5px;
+        display: block;
+        background: $overlay-background;
+    }
+}
+
+.tool:hover {
+    cursor: pointer;
 }
 
 
@@ -70,13 +105,23 @@ input[type="file"] {
 
 #shapes {
   $titlesize: 16px;
+
+  height: 200px;
+  overflow-y: scroll;
+  
   li {
     list-style: none;
   }
 
   .shape {
-    border-left: 4px solid #fff;
+    border-left: 5px solid rgba(0,0,0,0);
   }
+
+  .selected {
+      border-left: 5px solid $selected-colour !important;
+      background: none !important;
+  }
+  
 
   span {
     font-size: $titlesize;
@@ -113,7 +158,7 @@ $arrow-colour: #444;
   height: 0;
   margin: 1px;
   margin-left: 6px;
-//  /* margin-right: 5px;
+   margin-right: 5px;
   border-top: $arrow-width solid transparent;
   border-bottom: $arrow-width solid transparent;	
   border-left: $arrow-height solid $arrow-colour;
@@ -128,9 +173,9 @@ $arrow-colour: #444;
   margin-left: 4px;
 }
 
-.shape {
-  background: #fff;
-}
+/* .shape { */
+/*   background: #fff; */
+/* } */
   
 .shape-details {
   margin: 5px;
