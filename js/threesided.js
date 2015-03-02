@@ -1200,10 +1200,13 @@ function TShape(idOrData, order) {
         _outline: 1,
     };
 
-    this.cloneAppearence = function(other) {
-        for (var key in other.appearence) {
-            this.appearence[key] = other.appearence[key];
+    this.cloneAppearence = function(appearence) {
+        for (var key in appearence) {
+            this.appearence[key] = appearence[key];
         }
+        //use the getters and setters
+        this.appearence.fill = appearence.fill;
+        this.appearence.outline = appearence.outline;
     }
     // we want to know when fill and outline in appearence
     // are set, so define getters and setters
@@ -2026,6 +2029,17 @@ var EraseTriangleAction = {
     "name": "Erase Triangle",
 };
 
+var CloneAppearenceAction = {
+    "forward": function(shapeId, fromAppearence, toAppearence) {
+        shapes.get(shapeId).cloneAppearence(toAppearence);
+        shapes.get(shapeId).draw();
+    },
+    "backward": function(shapeId, fromAppearence, toAppearence) {
+        shapes.get(shapeId).cloneAppearence(fromAppearence);
+        shapes.get(shapeId).draw();
+    },
+};
+
 function changeAttribute(shapeId, attribute, value) {
     var shape = shapes.get(shapeId);
     shape.appearence[attribute] = value;
@@ -2337,9 +2351,9 @@ function Action(invoker, keyHandler) {
             current.shape = cloneTo;
         }
         else if (cloneTo !== undefined) {
-            var cloningFromShapeId = current.shape;
-            shapes.get(cloneTo).cloneAppearence(shapes.get(cloningFromShapeId));
-            shapes.get(cloneTo).draw();
+            var cloneFromAppearence = clone(shapes.get(current.shape).appearence);
+            var currentAppearence = clone(shapes.get(cloneTo).appearence);
+            invoker.push(CloneAppearenceAction, "forward", [cloneTo, currentAppearence, cloneFromAppearence]);
         }
         
     }
