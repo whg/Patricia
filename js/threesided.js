@@ -1,9 +1,9 @@
-// function go(){
+
 paper.install(window);
 paper.setup(document.getElementById("canvas")); 
 
 var sqrt3 = Math.sqrt(3);
-
+var HOST = "http://localhost:5000";
 
 var Index = Point;
 
@@ -1617,7 +1617,7 @@ function UI() {
         
         var anchor = $(this);
         var req = $.ajax({
-            url: "http://localhost:5000/save/",
+            url: HOST + "/save/",
             type: "POST",
             dataType: "json",
             crossDomain: true,
@@ -1723,6 +1723,18 @@ function UI() {
         }
     };
 
+
+    ////////////////////
+    this.updateStatus = function(status) {
+        if (status) {
+            $("#server-status").text("Connected");
+            $("#plotter-status").text(status.plotter ? "Connected" : "None");
+        }
+        else {
+            $("#server-status").text("None");
+            $("#plotter-status").text("None");
+        }
+    }
 }
 
 function Plot() {
@@ -1744,7 +1756,7 @@ function Plot() {
         console.log("data = " + data);
 
         var req = $.ajax({
-            url: "http://localhost:5000/plot/",
+            url: HOST + "/plot/",
             type: "POST",
             // dataType: "json",
             crossDomain: true,
@@ -1762,7 +1774,7 @@ function Plot() {
 
 function requestOffsets(data, cb) {
      var req = $.ajax({
-        url: "http://localhost:5000/offsets/",
+        url: HOST + "/offsets/",
         type: "POST",
         dataType: "json",
         crossDomain: true,
@@ -1829,7 +1841,7 @@ function plotOuterOffsets() {
     });
 
     var req = $.ajax({
-        url: "http://localhost:5000/plot/",
+        url: HOST + "/plot/",
         type: "POST",
         crossDomain: true,
         data: {
@@ -2024,7 +2036,7 @@ var EraseTriangleAction = {
             invertedIndex.add(triple.id, shapeIds[i]);
             shapes.get(shapeIds[i]).draw();
         }
-        return "Erase";
+        return "De-Erase";
     },
     "name": "Erase Triangle",
 };
@@ -2050,9 +2062,11 @@ function changeAttribute(shapeId, attribute, value) {
 var ChangeAppearenceAction = {
     "forward": function(shapeId, attribute, fromValue, toValue) {
         changeAttribute(shapeId, attribute, toValue);
+        return "Clone Appearence";
     },
     "backward": function(shapeId, attribute, fromValue, toValue) {
         changeAttribute(shapeId, attribute, fromValue);
+        return "De-Clone Appearence";
     },
     "name": "Change Appearence",
 };
@@ -2071,7 +2085,7 @@ function Invoker() {
         }
 
         commands.push(comm);
-        ui.updateHistory(action.name);
+        // ui.updateHistory(action.name);
         comm.execute();
         pos++;
     };
@@ -2630,3 +2644,15 @@ function wm(m) {
         $('#messages p:lt(2)').remove();
     }
 }
+
+
+var testPlotterConnection = null;
+(testPlotterConnection = function() {
+    $.ajax(HOST + "/test/").done(function(json) {
+        var data = JSON.parse(json);
+        ui.updateStatus(data);
+    }).fail(function(e){
+        ui.updateStatus(false);
+        console.log("fail");
+    });
+})();

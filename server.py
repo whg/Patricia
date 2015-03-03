@@ -17,7 +17,11 @@ plotter = None
 def id_from_data(data):
     return hex(hash(data))[2:]
 
-    
+
+def ACAOResponse(text):
+    res = make_response(text)
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    return res
 
 @app.route('/save/', methods=['POST', 'GET'])
 def save():
@@ -29,11 +33,11 @@ def save():
     with open(filepath, 'w') as f:
         f.write(data)
     
-    response = { 'fileid': fileid }
-    res = make_response(json.dumps(response))
-    res.headers['Access-Control-Allow-Origin'] = '*'
-
-    return res
+    response = json.dumps({ 'fileid': fileid })
+    # res = make_response(json.dumps(response))
+    # res.headers['Access-Control-Allow-Origin'] = '*'
+    return ACAOResponse(response)
+    # return res
     
 
 @app.route('/download/<fileid>', methods=['GET'])
@@ -59,9 +63,10 @@ def plot():
     data = request.form['data']
     plotter.plot(data)
 
-    res = make_response("done.")
-    res.headers['Access-Control-Allow-Origin'] = '*'
-    return res
+    # res = make_response("done.")
+    # res.headers['Access-Control-Allow-Origin'] = '*'
+    # return res
+    return ACAOResponse("done.")
 
 
 @app.route('/offsets/', methods=['POST', 'GET'])
@@ -77,27 +82,31 @@ def offsets():
     except ValueError:
         ret["success"] = False
 
-    res = make_response(json.dumps(ret))
-    res.headers['Access-Control-Allow-Origin'] = '*'
-    return res
+    # res = make_response(json.dumps(ret))
+    # res.headers['Access-Control-Allow-Origin'] = '*'
+    # return res
+    res = json.dumps(ret)
+    return ACAOResponse(res)
 
     # print p.stdout
     # print p.returncode
 
+@app.route('/test/')
+def test():
+    res = json.dumps({'plotter': plotter is not None })
+    return ACAOResponse(res)
 
 if __name__ == '__main__':
     # try:
         # se = serial.Serial('/dev/cu.usbserial')
         # se.write("SP2;")
-    useplot = False
     try:
         plotter = Plotter()
-        useplot = True
     except OSError:
         print("No plotter found, going without.")
-        
+
     app.run(debug=True)
 
-    if useplot:
+    if plotter:
         plotter.close()
         print "closed serial, hopefully"

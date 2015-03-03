@@ -19,7 +19,7 @@ $overlay-background: rgba(200,200,200, 0.2);
 #sidebar {
   $width: 250px;
   position: absolute;
-  background: $overlay-background;
+  /* background: $overlay-background; */
     /* float: right; */
       /* left: 80%; */
   top: $overlay-margin;
@@ -33,7 +33,21 @@ $overlay-background: rgba(200,200,200, 0.2);
       /* padding: 0px; */
       
   }
+
+  h4 {
+      margin: 0px;
+      font-size: 15px;
+  }
+
+  div.sidebar-container {
+      margin-bottom: 10px;
+      background: $overlay-background;
+  }
   /* padding: 5px; */
+}
+
+#connection-status {
+    font-size: 14px;
 }
 
 #thanks {
@@ -107,7 +121,7 @@ input[type="file"] {
 #shapes {
   $titlesize: 16px;
 
-  height: 200px;
+  height: 300px;
   overflow-y: scroll;
   
   li {
