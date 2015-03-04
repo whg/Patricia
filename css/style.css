@@ -12,7 +12,7 @@ canvas {
 
 #sidebar {
   position: absolute;
-  background: rgba(200, 200, 200, 0.2);
+  /* background: $overlay-background; */
   /* float: right; */
   /* left: 80%; */
   top: 15px;
@@ -25,6 +25,14 @@ canvas {
     margin: 0px;
     font-size: 12px;
     /* padding: 0px; */ }
+  #sidebar h4 {
+    margin: 0px;
+    font-size: 15px; }
+  #sidebar div.sidebar-container {
+    margin-bottom: 10px;
+    background: rgba(200, 200, 200, 0.2); }
+  #sidebar table {
+    font-size: 14px; }
 
 #thanks {
   position: absolute;
@@ -75,10 +83,12 @@ canvas {
   cursor: -webkit-grabbing; }
 
 input[type="file"] {
+  /* visibility: hidden; */
+  display: none;
   /* opacity: 0; */ }
 
 #shapes {
-  height: 200px;
+  height: 300px;
   overflow-y: scroll; }
   #shapes li {
     list-style: none; }
