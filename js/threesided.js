@@ -241,6 +241,9 @@ function joinedHatchLinesForShape(angle, spacing, shape) {
         points.push(intersections);
     }
 
+    lines.forEach(function(l) {
+        l.remove();
+    });
     lines = []
     for (var i = 0; i < points.length; i++) {
         var j = 0
@@ -284,7 +287,11 @@ function hatchLinesForShape(angle, spacing, shape) {
         points = points.concat(intersections);
     }
 
-    var lines = []
+    lines.forEach(function(l) {
+        l.remove();
+    });
+    lines = [];
+    
     for (var i = 0; i < points.length; i+=2) {
         lines.push(new Path.Line(points[i], points[i+1]));    
     }
