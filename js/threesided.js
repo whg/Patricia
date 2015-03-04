@@ -245,6 +245,7 @@ function joinedHatchLinesForShape(angle, spacing, shape) {
         l.remove();
     });
     lines = []
+    
     for (var i = 0; i < points.length; i++) {
         var j = 0
         for (; j < points[i].length-1; j+=2) {
@@ -2660,6 +2661,7 @@ var testPlotterConnection = null;
         ui.updateStatus(data);
     }).fail(function(e){
         ui.updateStatus(false);
-        console.log("fail");
     });
 })();
+
+var testConnectionInterval = setInterval(testPlotterConnection, 5000);
