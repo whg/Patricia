@@ -2656,12 +2656,21 @@ function wm(m) {
 
 var testPlotterConnection = null;
 (testPlotterConnection = function() {
-    $.ajax(HOST + "/test/").done(function(json) {
+    $.ajax(HOST + "/test/", {
+        error: function(xhr, status, error) {
+            console.log("ERROR: " + status + ", " + error);
+        }
+    }).done(function(json) {
         var data = JSON.parse(json);
         ui.updateStatus(data);
     }).fail(function(e){
         ui.updateStatus(false);
+        console.log("fail");
     });
 })();
 
-var testConnectionInterval = setInterval(testPlotterConnection, 5000);
+// window.onerror = function(message, url, lineNumber) {
+//    console.log(message);
+// };
+
+// var testConnectionInterval = setInterval(testPlotterConnection, 5000);
