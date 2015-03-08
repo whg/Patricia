@@ -502,7 +502,7 @@ function drawGridLines(type, size, group) {
         var p = new Path.Line({
             from: pointAtGridIndex(line.start),
             to: pointAtGridIndex(line.end),
-            strokeColor: '#bbb',
+            strokeColor: current.gridStrokeColour,
             strokeScaling: false,
         });
         line = nextLine(line, type, size);
@@ -1689,8 +1689,8 @@ function UI() {
     });
 
     $("#gridcolour").on("mousemove",function(e){
-        console.log(gridGroup.strokeColor);
-        gridGroup.strokeColor = new Color($(this).val() * 0.01);
+        current.gridStrokeColour = new Color($(this).val() * 0.01);
+        gridGroup.strokeColor = current.gridStrokeColour;
         view.draw();
 
     });
@@ -2599,6 +2599,7 @@ function Current() {
     var shape = null;
     this.selected = new Set();
     this.triangleSize = 50;
+    this.gridStrokeColour = new Color($("#gridcolour").val() * 0.01);
 
     Object.defineProperty(this, 'shape', {
         get: function() {
