@@ -1933,18 +1933,12 @@ function mergeShapes() {
         for (var tripleid in triples) {
             mergeIntoShape.add(triples[tripleid]);
             invertedIndex.add(tripleid, Number.parseInt(mergeIntoId));
-            console.log("added " + tripleid + " to " + mergeIntoId);
         }
-        // shapes.get(sj).add(triple);
-        // invertedIndex[triple] = shapeId;
-        // invertedIndex.add(triple.id, shapeId);
         deleteShape(shapeIds[i]);
     }
 
     mergeIntoShape.draw();
     view.draw();
-
-
 }
 
 function deleteShape(shapeId) {
@@ -1952,10 +1946,24 @@ function deleteShape(shapeId) {
     var triples = shapes.get(shapeId).items();
     for (var tripleid in triples) {
         invertedIndex.remove(tripleid, shapeId);
-        console.log("removed " + tripleid + " from " + shapeId);
     }
     
     shapes.remove(shapeId);
+}
+
+function duplicateSelected() {
+    var shapeIds = current.selected.items();
+    current.selected.clear();
+    for (var shapeId in shapeIds) {
+        var newShapeId = shapes.nextId();
+        var triples = shapes.get(shapeId).values();
+        CreateTriangleAction.forward(triples[0], newShapeId);
+        for (var j = 1; j < triples.length; j++) {
+            ExtendShapeAction.forward(triples[j], newShapeId);
+        }
+        current.selected.add(newShapeId);
+    }
+    
 }
 
 function Command(action, direction, args) {
@@ -2668,6 +2676,11 @@ keyHandler.add(["command", "d"], function() {
 keyHandler.add(["command", "m"], function() {
     mergeShapes();
     console.log("merged");
+});
+
+keyHandler.add(["command", "e"], function() {
+    duplicateSelected();
+
 });
 
 

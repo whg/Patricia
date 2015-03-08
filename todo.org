@@ -1,17 +1,21 @@
 
 
 * TODO backspace delete shape
-* TODO copy and paste
 * TODO rotate
-* TODO better modes for operation
-* TODO merge shapes (into one colour)
 * TODO layers
 so you can move shapes off the main grid
 * TODO rasterise objects when not editing
+* DONE copy and paste
+CLOSED: [2015-03-08 Sun 14:04]
+duplicate in place
+* DONE merge shapes (into one colour)
+CLOSED: [2015-03-08 Sun 13:56]
 * DONE load all shape attributes
 CLOSED: [2015-02-27 Fri 18:24]
 * DONE when loading, update shape id counter
 CLOSED: [2015-02-12 Thu 10:46]
+* DONE better modes for operation
+CLOSED: [2015-03-08 Sun 13:56]
 * DONE [#A] plot only single line
 CLOSED: [2015-02-10 Tue 15:21]
 done for different colours
