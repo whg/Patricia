@@ -1326,6 +1326,10 @@ function InvertedIndex() {
     };
 
     this.remove = function(tripleId, shapeId) {
+        if (typeof(shapeId) !== "number") {
+            shapeId = Number.parseInt(shapeId);
+        }
+        
         // let's presume tripleId exists in index
         var i = index[tripleId].indexOf(shapeId);
         if (i >= 0) {
@@ -1911,6 +1915,47 @@ function offsetsForAllOuter(spacing, drawGroup, maxLines, boundingRect) {
         }
     });
     
+}
+
+function mergeShapes() {
+    var shapeIds = sorted(current.selected.values());
+    if (shapeIds.length < 1) {
+        return;
+    }
+    
+    var mergeIntoId = shapeIds[0];
+    var mergeIntoShape = shapes.get(mergeIntoId);
+    current.selected.clear();
+
+    for (var i = 1; i < shapeIds.length; i++) {
+        var shape = shapes.get(shapeIds[i]);
+        var triples = shape.items();
+        for (var tripleid in triples) {
+            mergeIntoShape.add(triples[tripleid]);
+            invertedIndex.add(tripleid, Number.parseInt(mergeIntoId));
+            console.log("added " + tripleid + " to " + mergeIntoId);
+        }
+        // shapes.get(sj).add(triple);
+        // invertedIndex[triple] = shapeId;
+        // invertedIndex.add(triple.id, shapeId);
+        deleteShape(shapeIds[i]);
+    }
+
+    mergeIntoShape.draw();
+    view.draw();
+
+
+}
+
+function deleteShape(shapeId) {
+
+    var triples = shapes.get(shapeId).items();
+    for (var tripleid in triples) {
+        invertedIndex.remove(tripleid, shapeId);
+        console.log("removed " + tripleid + " from " + shapeId);
+    }
+    
+    shapes.remove(shapeId);
 }
 
 function Command(action, direction, args) {
@@ -2618,6 +2663,11 @@ keyHandler.add(["command", "d"], function() {
     // offsetsForAllOuter(4, allOuters, 50, boundingRect);
     plotOuterOffsets();
     console.log("requested");
+});
+
+keyHandler.add(["command", "m"], function() {
+    mergeShapes();
+    console.log("merged");
 });
 
 
