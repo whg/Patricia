@@ -11,8 +11,6 @@ app = Flask(__name__)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 save_dir = os.path.join(current_dir, 'saves')
 plotter = None
-# def generate_file_id():
-#     return datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 
 def id_from_data(data):
     return hex(hash(data))[2:]
@@ -34,10 +32,7 @@ def save():
         f.write(data)
     
     response = json.dumps({ 'fileid': fileid })
-    # res = make_response(json.dumps(response))
-    # res.headers['Access-Control-Allow-Origin'] = '*'
     return ACAOResponse(response)
-    # return res
     
 
 @app.route('/download/<fileid>', methods=['GET'])
@@ -59,14 +54,14 @@ def download(fileid):
 @app.route('/plot/', methods=['POST', 'GET'])
 def plot():
     global plotter
+    print plotter
+    if not plotter:
+        return ACAOResponse(json.dumps({ 'error': 'plotter not connected' }))
     
     data = request.form['data']
     plotter.plot(data)
 
-    # res = make_response("done.")
-    # res.headers['Access-Control-Allow-Origin'] = '*'
-    # return res
-    return ACAOResponse("done.")
+    return ACAOResponse({ 'success': 'OK' })
 
 
 @app.route('/offsets/', methods=['POST', 'GET'])
@@ -82,14 +77,8 @@ def offsets():
     except ValueError:
         ret["success"] = False
 
-    # res = make_response(json.dumps(ret))
-    # res.headers['Access-Control-Allow-Origin'] = '*'
-    # return res
     res = json.dumps(ret)
     return ACAOResponse(res)
-
-    # print p.stdout
-    # print p.returncode
 
 @app.route('/test/')
 def test():
@@ -97,16 +86,13 @@ def test():
     return ACAOResponse(res)
 
 if __name__ == '__main__':
-    # try:
-        # se = serial.Serial('/dev/cu.usbserial')
-        # se.write("SP2;")
     try:
         plotter = Plotter()
     except OSError:
         print("No plotter found, going without.")
 
-    app.run(debug=True)
+    app.run()
 
     if plotter:
         plotter.close()
-        print "closed serial, hopefully"
+        print "closed serial"

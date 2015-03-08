@@ -1770,14 +1770,18 @@ function Plot() {
         var req = $.ajax({
             url: HOST + "/plot/",
             type: "POST",
-            // dataType: "json",
+            dataType: "json",
             crossDomain: true,
             data: {
                 "data": JSON.stringify(data),
             },
         }).done(function(data) {
 
-            console.log("sent file to plot, returned: " + data);
+            console.log("sent file to plot");
+            
+            if ("error" in data) {
+                alert(data["error"]);
+            }
         });
 
     };
@@ -1956,10 +1960,18 @@ function duplicateSelected() {
     current.selected.clear();
     for (var shapeId in shapeIds) {
         var newShapeId = shapes.nextId();
-        var triples = shapes.get(shapeId).values();
-        CreateTriangleAction.forward(triples[0], newShapeId);
-        for (var j = 1; j < triples.length; j++) {
-            ExtendShapeAction.forward(triples[j], newShapeId);
+        var triples = shapes.get(shapeId).items();
+
+        var donefirst = false;
+        for (var tripleid in triples) {
+            var triple = triples[tripleid];
+            if (!donefirst) {
+                CreateTriangleAction.forward(triple, newShapeId);
+                donefirst = true;
+            }
+            else {
+                ExtendShapeAction.forward(triple, newShapeId);
+            }
         }
         current.selected.add(newShapeId);
     }
@@ -2210,6 +2222,7 @@ function KeyComboHandler() {
             event.preventDefault();
             return false;
         }
+        return true;
     };
 
     
@@ -2536,14 +2549,16 @@ function Action(invoker, keyHandler) {
         if (event.key in modifierStates) {
             modifierStates[event.key] = true;
         }
-        else {
-            if (atLeastOneModifier()) {
-                for (var key in modifierStates) {
-                    event.modifiers[key] = modifierStates[key];
-                }
-                
-                ret = keyHandler.call(event);
+        else if (atLeastOneModifier()) {
+            for (var key in modifierStates) {
+                event.modifiers[key] = modifierStates[key];
             }
+
+            ret = keyHandler.call(event);
+        }
+        else if (modeKeys[event.key] !== undefined) {
+            // current.mode = that.modes[modeKeys[event.key]];
+            that.selectMode(event.key);
         }
 
         if (event.key === "escape") {
@@ -2551,10 +2566,7 @@ function Action(invoker, keyHandler) {
         }
 
         
-        if (modeKeys[event.key] !== undefined) {
-            // current.mode = that.modes[modeKeys[event.key]];
-            that.selectMode(event.key);
-        }
+        
 
         return ret; // might be false in which case don't do what you normally do
     }
@@ -2666,19 +2678,16 @@ keyHandler.add(["command", "a"], function() {
     filterDuplicateLines(shapes.shapeIds());
 });
 
-keyHandler.add(["command", "d"], function() {
-    // offsetsForShape(shapes.get(1));
-    // offsetsForAllOuter(4, allOuters, 50, boundingRect);
+keyHandler.add(["command", "x"], function() {
     plotOuterOffsets();
     console.log("requested");
 });
 
 keyHandler.add(["command", "m"], function() {
     mergeShapes();
-    console.log("merged");
 });
 
-keyHandler.add(["command", "e"], function() {
+keyHandler.add(["command", "d"], function() {
     duplicateSelected();
 
 });
