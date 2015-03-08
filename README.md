@@ -8,7 +8,7 @@ Fire up the server: `python server.py`
 
 Patricia tries to be a bit like Adobe's Illustrator; Pressing keys enables different modes or tools. These are also shown in the left hand toolbar. The main view shows a sheet of A3. You can pan by scrolling and in normal operation, to zoom, hold the option/alt key to zoom while scrolling.
 
-The different tools with their corresponding keys are:
+### Modes/Tools
 
 - Draw (**a**): Drag the mouse to create a shape. This is both constructive and desctrucive, if you move to an empty triangle it will fill it, but if you move to a filled one it will remove it.
 - Erase (**e**): Erase the contents of a triangle, by clicking or dragging.
@@ -16,6 +16,18 @@ The different tools with their corresponding keys are:
 - Move (**m**): Move the selected shapes or the shape that you initally click on.
 - Clone Appearence (**c**): Clone the appearence of a shape by clicking on it. If you command click you select the shape you want to clone from. My default you clone the current/selected shape (more on that later).
 - View (**v**): Scrolling now zooms in and out and you can pan by dragging.
+
+### Actions
+
+Actions are invoked by combining keys with one or more modifier key. The Control key is mirrored with Command.
+
+- Merge (**Command-m**): Merge selected shapes.
+- Duplicate (**Command-d**): Duplicate the selected shapes at location. (The new shapes are selected after this action.)
+- Undo (**Command-z**)
+- Redo (**Command-Shift-z**)
+- Plot (**Command-p**): Plot all the shapes.
+- Plot selected (**Command-Shift-p**): Plot the selected shapes.
+
 
 ### Shapes
 
