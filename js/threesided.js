@@ -314,37 +314,6 @@ function zigzagLinesForShape(angle, spacing, shape) {
     });
 
     return [result];
-    // var lines = linesForShape(angle, spacing, shape);
-    // var points = [];
-    // var retlines = [];
-    // for (var i = 1; i < lines.length; i++) {
-    //     // console.log(lines[i]);
-    //     var j = i % 2;
-    //     var k = (i + 1) % 2;
-    //     var line = new Path.Line(lines[i-1].segments[j].point, lines[i].segments[k].point);
-    //     // line.strokeColor = 'red';
-    //     var intersections = shape.getIntersections(line);
-
-    //     intersections = intersections.map(function(e) {
-    //         var p = new Path.Circle(e.point, 3);
-    //         // p.fillColor = 'green';
-        
-    //         return e.point;
-    //     }).sort(function(a, b) {
-    //         return a.y < b.y;
-    //     });
-
-        
-    //     if (i % 2 == 1) {
-    //         intersections.reverse();
-    //     }
-
-    //     retlines.push(new Path.Line(lines[i-1].segments[j].point, intersections[0]));
-    //     retlines.push(new Path.Line(intersections[intersections.length-1], lines[i].segments[k].point));
-    // }
-
- 
-    return retlines;
 }
 
 
@@ -1804,17 +1773,18 @@ function Plot() {
     
 }
 
-function requestOffsets(data, cb) {
+function requestOffsets(shapeId, data, cb) {
      var req = $.ajax({
         url: HOST + "/offsets/",
         type: "POST",
         dataType: "json",
         crossDomain: true,
         data: {
+            "shapeId": shapeId,
             "data": JSON.stringify(data),
         },
     }).done(function(data) {
-        cb.call(undefined, data);
+        cb.call(null, data);
         console.log(data);
     });
 }
@@ -1826,11 +1796,7 @@ function segmentToXY(segment) {
     };
 }
 
-var requestMade = false;
 function offsetsForShape(shape) {
-    if (requestMade) {
-        return;
-    }
     
     shape.mergeLines(true);
     var outlines = shape.outline.children.map(function(path) {
@@ -1849,6 +1815,7 @@ function offsetsForShape(shape) {
 
     function donecb(data) {
         if (data.success) {
+            var shape = shapes.get(data.shapeId);
             var lines = data.offsets.map(function(offset) {
                 var p = new Path({
                     segments: offset,
@@ -1859,12 +1826,14 @@ function offsetsForShape(shape) {
             shape.makeLines(lines);
             view.draw();
         }
+        else {
+            alert(data.error);
+        }
         requestMade = false;
     }
 
-    requestOffsets(data, donecb);
+    requestOffsets(shape.id, data, donecb);
 
-    requestMade = true;
 }
 
 function plotOuterOffsets() {

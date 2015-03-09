@@ -61,7 +61,7 @@ def plot():
     data = request.form['data']
     plotter.plot(data)
 
-    return ACAOResponse({ 'success': 'OK' })
+    return ACAOResponse({ 'success': True })
 
 
 @app.route('/offsets/', methods=['POST', 'GET'])
@@ -70,12 +70,15 @@ def offsets():
     process = Popen(['./offsets/offsets'], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     out, er = process.communicate(input=request.form['data'])
 
-    ret = { "success": process.returncode == 0 }
+    ret = {
+        'success': process.returncode == 0,
+        'shapeId': request.form['shapeId'],
+    }
     
     try:
-        ret["offsets"] = json.loads(out)
+        ret['offsets'] = json.loads(out)
     except ValueError:
-        ret["success"] = False
+        ret['error'] = 'Bad JSON from CGAL'
 
     res = json.dumps(ret)
     return ACAOResponse(res)
