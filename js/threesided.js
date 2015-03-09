@@ -302,34 +302,46 @@ function hatchLinesForShape(angle, spacing, shape) {
 
 function zigzagLinesForShape(angle, spacing, shape) {
 
-    var lines = linesForShape(angle, spacing, shape);
-    var points = [];
-    var retlines = [];
-    for (var i = 1; i < lines.length; i++) {
-        // console.log(lines[i]);
-        var j = i % 2;
-        var k = (i + 1) % 2;
-        var line = new Path.Line(lines[i-1].segments[j].point, lines[i].segments[k].point);
-        // line.strokeColor = 'red';
-        var intersections = shape.getIntersections(line);
-
-        intersections = intersections.map(function(e) {
-            var p = new Path.Circle(e.point, 3);
-            // p.fillColor = 'green';
-        
-            return e.point;
-        }).sort(function(a, b) {
-            return a.y < b.y;
-        });
-
-        
-        if (i % 2 == 1) {
-            intersections.reverse();
-        }
-
-        retlines.push(new Path.Line(lines[i-1].segments[j].point, intersections[0]));
-        retlines.push(new Path.Line(intersections[intersections.length-1], lines[i].segments[k].point));
+    var hatches = hatchLinesForShape(angle, spacing/2, shape);
+    var result = new Path([hatches[0].segments[0]]);
+    
+    for (var i = 1; i < hatches.length; i++) {
+        result.segments.push(hatches[i].segments[0]);
     }
+    
+    hatches.forEach(function(l) {
+        l.remove();
+    });
+
+    return [result];
+    // var lines = linesForShape(angle, spacing, shape);
+    // var points = [];
+    // var retlines = [];
+    // for (var i = 1; i < lines.length; i++) {
+    //     // console.log(lines[i]);
+    //     var j = i % 2;
+    //     var k = (i + 1) % 2;
+    //     var line = new Path.Line(lines[i-1].segments[j].point, lines[i].segments[k].point);
+    //     // line.strokeColor = 'red';
+    //     var intersections = shape.getIntersections(line);
+
+    //     intersections = intersections.map(function(e) {
+    //         var p = new Path.Circle(e.point, 3);
+    //         // p.fillColor = 'green';
+        
+    //         return e.point;
+    //     }).sort(function(a, b) {
+    //         return a.y < b.y;
+    //     });
+
+        
+    //     if (i % 2 == 1) {
+    //         intersections.reverse();
+    //     }
+
+    //     retlines.push(new Path.Line(lines[i-1].segments[j].point, intersections[0]));
+    //     retlines.push(new Path.Line(intersections[intersections.length-1], lines[i].segments[k].point));
+    // }
 
  
     return retlines;
@@ -1255,10 +1267,14 @@ function TShape(idOrData, order) {
             else if (a.filltype === "joinedhatch") {
                 lines = joinedHatchLinesForShape(a.angle, a.spacing, this.outline);
             }
+            else if(a.filltype === "zigzag") {
+                lines = zigzagLinesForShape(a.angle, a.spacing, this.outline);
+            }
             else if (a.filltype === "offset") {
                 lines = [];
                 offsetsForShape(this);
             }
+
         }
         
         this.fill.removeChildren();
@@ -1973,9 +1989,16 @@ function duplicateSelected() {
                 ExtendShapeAction.forward(triple, newShapeId);
             }
         }
+
+        shapes.get(newShapeId).cloneAppearence(shapes.get(shapeId).appearence);
         current.selected.add(newShapeId);
     }
-    
+
+    action.tool.onMouseMove = action.moveShapes;
+    action.tool.onMouseDown = function() {
+        action.restoreDefaultTools()
+        action.tool.onMouseMove = null;
+    };
 }
 
 function Command(action, direction, args) {
@@ -2340,6 +2363,7 @@ function Action(invoker, keyHandler) {
         }
         
     }
+    this.moveShapes = moveShapes;
 
     function eraseTriangle(event) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
@@ -2516,13 +2540,16 @@ function Action(invoker, keyHandler) {
     var modifiers = Object.keys(modifierStates);
     
 
-    var tool = new Tool();
-
+    this.tool = new Tool();
+    
     var mouseEvents = ["onMouseDown", "onMouseUp", "onMouseDrag", "onMouseScroll"];
 
-    mouseEvents.forEach(function(eventType){
-        tool[eventType] = callEventFactory(eventType);
-    });
+    this.restoreDefaultTools;
+    (this.restoreDefaultTools = function() {
+        mouseEvents.forEach(function(eventType){
+            this.tool[eventType] = callEventFactory(eventType);
+        });
+    })();
 
 
     function atLeastOneModifier() {
@@ -2535,7 +2562,7 @@ function Action(invoker, keyHandler) {
     }
     
     var that = this;
-    tool.onKeyDown = function onKeyDown(event) {
+    this.tool.onKeyDown = function onKeyDown(event) {
 
         var ret = true;
 
@@ -2571,7 +2598,7 @@ function Action(invoker, keyHandler) {
         return ret; // might be false in which case don't do what you normally do
     }
 
-    tool.onKeyUp = function onKeyUp(event) {
+    this.tool.onKeyUp = function onKeyUp(event) {
 
         if (modifierStates[event.key] !== undefined) {
             modifierStates[event.key] = false;
@@ -2580,15 +2607,15 @@ function Action(invoker, keyHandler) {
 
     // make the scroll event, so it behaves like the others
     
-    tool.scrollEvent = new ToolEvent(tool, "mousescroll", new MouseEvent());
-    tool.scrollEvent.point = new Point();
-    tool.scrollEvent.delta = new Point();
+    this.tool.scrollEvent = new ToolEvent(tool, "mousescroll", new MouseEvent());
+    this.tool.scrollEvent.point = new Point();
+    this.tool.scrollEvent.delta = new Point();
 
     $("#canvas").bind('mousewheel DOMMouseScroll', function(event){
-        tool.scrollEvent.point.set(event.offsetX, event.offsetY);
-        tool.scrollEvent.delta.x = -event.originalEvent.deltaX * 0.5;
-        tool.scrollEvent.delta.y = -event.originalEvent.deltaY * 0.5;
-        tool.onMouseScroll(tool.scrollEvent);
+        that.tool.scrollEvent.point.set(event.offsetX, event.offsetY);
+        that.tool.scrollEvent.delta.x = -event.originalEvent.deltaX * 0.5;
+        that.tool.scrollEvent.delta.y = -event.originalEvent.deltaY * 0.5;
+        that.tool.onMouseScroll(that.tool.scrollEvent);
         event.preventDefault();
     });
 

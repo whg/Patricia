@@ -13,7 +13,6 @@ canvas {
     /* float: left; */
 }
 
-
 $overlay-margin: 15px;
 $overlay-background: rgba(200,200,200, 0.2);
 #sidebar {
@@ -44,11 +43,13 @@ $overlay-background: rgba(200,200,200, 0.2);
       background: $overlay-background;
   }
   /* padding: 5px; */
+
+  table {
+      font-size: 14px;
+  }
+
 }
 
-#connection-status {
-    font-size: 14px;
-}
 
 #thanks {
     $height: 10px;
