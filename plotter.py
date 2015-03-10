@@ -5,8 +5,8 @@ import sys
 import serial
 import json
 from chiplotle.tools.plottertools import instantiate_plotters
-
 from chiplotle.plotters.drawingplotter import _DrawingPlotter
+from scipy.spatial import KDTree
 
 class DXY980(_DrawingPlotter):
     def __init__(self, ser, **kwargs):
@@ -33,18 +33,57 @@ def digital2real(p):
     return x, y
 
 
+def orderpaths(paths):
+
+    ret = []
+    # strip the first element (see above)
+    pathpoints = [map(lambda p: p[1:], path) for path in paths]
+
+    starts = [path[0] for path in pathpoints]
+    ends = [path[-1] for path in pathpoints]
+
+    import kdtree
+
+    tree = kdtree.create(starts + ends)
+
+    lpi = 0
+    ret = [paths[lpi]]
+    # laststart = starts.pop(lpi)
+
+    tree.remove(starts[lpi])
+    tree.remove(ends[lpi])
+    wasstart = True
+    for i in range(len(paths)-1):
+        v = tree.search_nn(ends[lpi] if wasstart else starts[lpi])
+
+        try:
+            lpi = starts.index(v.data)
+        except ValueError:
+            lpi = ends.index(v.data)
+
+        tree = tree.remove(starts[lpi])
+        tree = tree.remove(ends[lpi])
+        ret.append(paths[lpi])
+
+    return ret
+    
 def paper2hpgl(paperjson):
     data = json.loads(paperjson)
     comms = []
     for pen, paths in data.items():
         comms.append("SP%s;" % pen)
+        
+        paths = orderpaths(paths)
+        
         for path in paths:
             comms.append("PU%d,%d;" % digital2real(path[0]))
+
             for p in path:
                 comms.append("PD%d,%d;" % digital2real(p))
-            
+
             comms.append("PU;")
 
+    comms.append("SP0;")
     return str("".join(comms))
 
 class Plotter(object):
