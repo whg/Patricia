@@ -698,8 +698,16 @@ function Set() {
         this._values = {};
     };
 
-    this.values = function() {
+    this.keys = function() {
         return Object.keys(this._values);
+    };
+
+    this.values = function() {
+        var r = [];
+        for (var k in this._values) {
+            r.push(this._values[k]);
+        }
+        return r;
     };
 
     this.items = function() {
@@ -711,7 +719,7 @@ function Set() {
     };
     
     this.toString = function() {
-        return "Set( " + this.values().join(', ') + " )";
+        return "Set( " + this.keys().join(', ') + " )";
     };
 
 }
@@ -798,7 +806,7 @@ function isValidTriple(triple) {
 
 function getPerimeterEdges(pntSet) {
     var outerEdges = {};
-    var vs = pntSet.values();
+    var vs = pntSet.keys();
 
     //we want only one occurence of each edge,
     //add things to an object, if the key is there delete...
@@ -1906,39 +1914,114 @@ function offsetsForAllOuter(spacing, drawGroup, maxLines, boundingRect) {
     
 }
 
+var MergeShapeAction = {
+  "forward": function(mergeIntoId, shapeIdsAndTriples) {
+
+      var mergeIntoShape = shapes.get(mergeIntoId);
+
+      for (var i = 0; i < shapeIdsAndTriples.length; i++) {
+
+          var triples = shapeIdsAndTriples[i].triples;;
+
+          triples.forEach(function(triple) {
+              ExtendShapeAction.forward(triple, Number.parseInt(mergeIntoId));
+          });
+          
+          var shapeId = Number.parseInt(shapeIdsAndTriples[i].shapeId);          
+          DeleteShapeAction.forward(shapeId);
+      }
+
+      mergeIntoShape.draw();
+      view.draw();
+  },
+    "backward":  function(mergeOutOfId, shapeIdsAndTriples) {
+      var mergeOutOfShape = Number.parseInt(shapes.get(mergeOutOfId));
+
+      for (var i = 0; i < shapeIdsAndTriples.length; i++) {
+
+          var shapeId = Number.parseInt(shapeIdsAndTriples[i].shapeId);
+          var triples = shapeIdsAndTriples[i].triples;;
+          
+          triples.forEach(function(triple, j) {
+              
+              if (j == 0) {
+                  CreateTriangleAction.forward(triple, shapeId);
+              }
+              else {
+                  ExtendShapeAction.forward(triple, shapeId);
+              }
+
+              ExtendShapeAction.backward(triple, mergeOutOfId);
+          });
+      }
+
+      view.draw();
+        
+    }
+};
+
 function mergeShapes() {
-    var shapeIds = sorted(current.selected.values());
+    var shapeIds = sorted(current.selected.keys());
     if (shapeIds.length < 1) {
         return;
     }
     
-    var mergeIntoId = shapeIds[0];
-    var mergeIntoShape = shapes.get(mergeIntoId);
+    var mergeIntoId = shapeIds.splice(0, 1)[0];
+    var shapeIdsAndTriples = shapeIds.map(function(id) {
+        return {
+            shapeId: id,
+            triples: shapes.get(id).values().map(function(t) {
+                return new Triple(t);
+            }),
+        };
+    });
+
     current.selected.clear();
 
-    for (var i = 1; i < shapeIds.length; i++) {
-        var shape = shapes.get(shapeIds[i]);
-        var triples = shape.items();
-        for (var tripleid in triples) {
-            mergeIntoShape.add(triples[tripleid]);
-            invertedIndex.add(tripleid, Number.parseInt(mergeIntoId));
+    invoker.push(MergeShapeAction, "forward", [mergeIntoId, shapeIdsAndTriples]);
+
+}
+
+var DeleteShapeAction = {
+    "forward": function(shapeId, triples) {
+
+        if (triples === undefined) {
+            triples = shapes.get(shapeId).values();
         }
-        deleteShape(shapeIds[i]);
+        
+        triples.forEach(function(triple, i) {
+            if (i == triples.length-1) {
+                CreateTriangleAction.backward(triple, shapeId);
+            }
+            else {
+                ExtendShapeAction.backward(triple, shapeId);
+            }
+        });
+    },
+    "backward": function(shapeId, triples) {
+        triples.forEach(function(triple, i) {
+            if (i == 0) {
+                CreateTriangleAction.forward(triple, shapeId);
+            }
+            else {
+                ExtendShapeAction.forward(triple, shapeId);
+            }
+        });
     }
+};
 
-    mergeIntoShape.draw();
-    view.draw();
-}
-
-function deleteShape(shapeId) {
-
-    var triples = shapes.get(shapeId).items();
-    for (var tripleid in triples) {
-        invertedIndex.remove(tripleid, shapeId);
+var DeleteShapesAction = {
+    "forward": function(shapeIds, triplesArray) {
+        shapeIds.forEach(function(id, i) {
+            DeleteShapeAction.forward(id, triplesArray[i]);
+        });
+    },
+    "backward": function(shapeIds, triplesArray) {
+        shapeIds.forEach(function(id, i) {
+            DeleteShapeAction.backward(id, triplesArray[i]);
+        });  
     }
-    
-    shapes.remove(shapeId);
-}
+};
 
 var DuplicateShapeAction = {
   "forward": function(triplesArray, fromIds, toIds) {
@@ -1961,7 +2044,7 @@ var DuplicateShapeAction = {
     "backward": function(triplesArray, fromIds, toIds) {
 
         toIds.forEach(function(id) {
-            deleteShape(id);
+            DeleteShapeAction.forward(id);
         })
     }
     
@@ -1969,7 +2052,7 @@ var DuplicateShapeAction = {
 };
 
 function duplicateSelected() {
-    var shapeIds = current.selected.values();
+    var shapeIds = current.selected.keys();
     current.selected.clear();
 
     var toIds = shapeIds.map(function(sid) {
@@ -1977,13 +2060,8 @@ function duplicateSelected() {
     });
 
     var triplesArray = shapeIds.map(function(sid) {
-        var items = shapes.get(sid).items();
-        var r = [];
-        for (var k in items) {
-            r.push(items[k]);
-        }
-        return r;
-    })
+        return shapes.get(sid).values();
+    });
 
     invoker.push(DuplicateShapeAction, "forward", [triplesArray, shapeIds, toIds]);
 
@@ -2108,7 +2186,7 @@ var EraseTriangleAction = {
 
             shapes.get(shapeIds[i]).remove(triple);
 
-            if (shapes.get(shapeIds[i]).values().length === 0) {
+            if (shapes.get(shapeIds[i]).keys().length === 0) {
                 shapes.remove(shapeIds[i]);
             }
             else {
@@ -2305,7 +2383,7 @@ function Action(invoker, keyHandler) {
             if (shapes.get(current.shape).has(current.triple)) {
 
                 var action = ExtendShapeAction;
-                if (shapes.get(current.shape).values().length === 1) {
+                if (shapes.get(current.shape).keys().length === 1) {
                     action = CreateTriangleAction;
                 }
                 invoker.push(action, "backward", [current.triple, current.shape]);
@@ -2354,7 +2432,7 @@ function Action(invoker, keyHandler) {
         if (triple.id !== current.triple.id && triangleDirection(triple) === triangleDirection(current.triple)) {
             var moveTriple = triple.subtract(current.triple);
 
-            invoker.push(MoveShapeAction, "forward", [current.selected.values(), moveTriple]);
+            invoker.push(MoveShapeAction, "forward", [current.selected.keys(), moveTriple]);
 
             current.triple = triple;
         }
@@ -2471,6 +2549,24 @@ function Action(invoker, keyHandler) {
         current.selected.clear();
     }
 
+    function deleteSelected() {
+
+        console.log("deleted");
+        var shapeIds = current.selected.values();
+        current.selected.clear();
+        if (shapeIds.length === 0) {
+            return;
+        }
+        
+        var triplesArray = shapeIds.map(function(id) {
+            return shapes.get(id).values().map(function(t) {
+                return new Triple(t);
+            });
+        });
+
+        invoker.push(DeleteShapesAction, "forward", [shapeIds, triplesArray]);
+
+    }
 
     function callEventFactory(eventType) {
         
@@ -2589,7 +2685,10 @@ function Action(invoker, keyHandler) {
             escape();
         }
 
-        
+        if (event.key === "backspace") {
+            deleteSelected();
+            ret = false;
+        }
         
 
         return ret; // might be false in which case don't do what you normally do
