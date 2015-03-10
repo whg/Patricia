@@ -1833,7 +1833,7 @@ function offsetsForShape(shape) {
     }
 
     requestOffsets(shape.id, data, donecb);
-
+    
 }
 
 function plotOuterOffsets() {
@@ -1940,29 +1940,57 @@ function deleteShape(shapeId) {
     shapes.remove(shapeId);
 }
 
-function duplicateSelected() {
-    var shapeIds = current.selected.items();
-    current.selected.clear();
-    for (var shapeId in shapeIds) {
-        var newShapeId = shapes.nextId();
-        var triples = shapes.get(shapeId).items();
+var DuplicateShapeAction = {
+  "forward": function(triplesArray, fromIds, toIds) {
 
-        var donefirst = false;
-        for (var tripleid in triples) {
-            var triple = triples[tripleid];
-            if (!donefirst) {
-                CreateTriangleAction.forward(triple, newShapeId);
-                donefirst = true;
-            }
-            else {
-                ExtendShapeAction.forward(triple, newShapeId);
-            }
-        }
+      triplesArray.forEach(function(triples, i) {
+   
+          triples.forEach(function(triple, j) {
+              if (j == 0) {
+                  CreateTriangleAction.forward(triple, toIds[i]);
+              }
+              else {
+                  ExtendShapeAction.forward(triple, toIds[i]);
+              }
+          });
+          shapes.get(toIds[i]).cloneAppearence(shapes.get(fromIds[i]).appearence);
 
-        shapes.get(newShapeId).cloneAppearence(shapes.get(shapeId).appearence);
-        current.selected.add(newShapeId);
+      });
+
+  },
+    "backward": function(triplesArray, fromIds, toIds) {
+
+        toIds.forEach(function(id) {
+            deleteShape(id);
+        })
     }
+    
+      
+};
 
+function duplicateSelected() {
+    var shapeIds = current.selected.values();
+    current.selected.clear();
+
+    var toIds = shapeIds.map(function(sid) {
+        return shapes.nextId();
+    });
+
+    var triplesArray = shapeIds.map(function(sid) {
+        var items = shapes.get(sid).items();
+        var r = [];
+        for (var k in items) {
+            r.push(items[k]);
+        }
+        return r;
+    })
+
+    invoker.push(DuplicateShapeAction, "forward", [triplesArray, shapeIds, toIds]);
+
+    toIds.forEach(function(id) {
+        current.selected.add(id);
+    });
+    
     action.tool.onMouseMove = action.moveShapes;
     action.tool.onMouseDown = function() {
         action.restoreDefaultTools()
@@ -1991,7 +2019,7 @@ function Command(action, direction, args) {
         }
 
         var name = this.action[dir].apply(this.action, this.args);
-        console.log("executed " + name + " with " + this.args);
+        // console.log("executed " + name + " with " + this.args);
     };
 
 }
@@ -2540,7 +2568,7 @@ function Action(invoker, keyHandler) {
             event.key = "command";
         }
         
-        console.log(event);
+        // console.log(event);
 
         if (event.key in modifierStates) {
             modifierStates[event.key] = true;
