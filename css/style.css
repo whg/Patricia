@@ -88,7 +88,7 @@ input[type="file"] {
   /* opacity: 0; */ }
 
 #shapes {
-  height: 300px;
+  height: 500px;
   overflow-y: scroll; }
   #shapes li {
     list-style: none; }
