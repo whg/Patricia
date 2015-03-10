@@ -28,6 +28,7 @@ Actions are invoked by combining keys with one or more modifier key. The Control
 - Plot (**Command-p**): Plot all the shapes.
 - Plot selected (**Command-Shift-p**): Plot the selected shapes.
 
+You can delete the selected shapes by hitting the backspace key.
 
 ### Shapes
 

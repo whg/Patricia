@@ -1,10 +1,10 @@
 
 
-* TODO backspace delete shape
-* TODO rotate
 * TODO layers
 so you can move shapes off the main grid
 * TODO rasterise objects when not editing
+* DONE backspace delete shape
+CLOSED: [2015-03-10 Tue 10:26]
 * DONE copy and paste
 CLOSED: [2015-03-08 Sun 14:04]
 duplicate in place
