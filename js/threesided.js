@@ -1782,6 +1782,7 @@ function Plot() {
 }
 
 function requestOffsets(shapeId, data, cb) {
+    console.log(data);
      var req = $.ajax({
         url: HOST + "/offsets/",
         type: "POST",
@@ -1893,9 +1894,9 @@ function offsetsForAllOuter(spacing, drawGroup, maxLines, boundingRect) {
 
     // data["inner"] = [boundingRect.segments.map(segmentToXY)];
     data["spacing"] = spacing;
-
+    console.log(data);
     allOuters.removeChildren();
-    requestOffsets(data, function(data) {
+    requestOffsets(0, data, function(data) {
          if (data.success) {
              var lines = data.offsets.map(function(offset) {
                  var p = new Path({
