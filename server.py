@@ -61,7 +61,7 @@ def plot():
     data = request.form['data']
     plotter.plot(data)
 
-    return ACAOResponse({ 'success': True })
+    return ACAOResponse(json.dumps({ 'success': True }))
 
 
 @app.route('/offsets/', methods=['POST', 'GET'])
