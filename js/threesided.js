@@ -1615,9 +1615,8 @@ function UI() {
 
     ////////////////////////////////////////
     // download & upload
-    
-    $("#download").click(function(e) {
 
+    function download() {
         var data = {};
         data["version"] = 0.01;
         data["shapes"] = shapes.getState();
@@ -1638,14 +1637,25 @@ function UI() {
             
         });
         
+    }
+    this.download = download;
+    
+    $("#download").click(function(e) {
+
+        download();
+        
         e.preventDefault();
         return false;
     });
 
+    function upload() {
+        $("#fileupload").trigger('click');
+    }
+    this.upload = upload;
 
     $("#upload").click(function(e){
         e.preventDefault();
-        $("#fileupload").trigger('click');
+        upload();
     });
 
     function loadState(obj) {
@@ -1718,9 +1728,33 @@ function UI() {
 
         $(".tool[title="+toTitle(modeName)+"]").toggleClass("selected", true);
         highlightedTool = modeName;
-        console.log(modeName);
-        console.log(highlightedTool);
     };
+
+    ////////////////////////////////////////////////////////
+    // actions
+
+    $(".action").click(function(event) {
+        var name = fromTitle($(this).attr("title"));
+        keyHandler.callWithName(name);
+        view.draw();
+    });
+
+    $(".action").mousedown(function(event) {
+        $(this).toggleClass("selected", true);
+    });
+
+    $(".action").mouseup(function(event) {
+        $(this).toggleClass("selected", false);
+    });
+
+    this.highlightAction = function(name) {
+        var title = toTitle(name);
+        $(".action[title="+title+"]").toggleClass("selected", true);
+
+        setTimeout(function() {
+            $(".action[title="+title+"]").toggleClass("selected");
+        }, 100);
+    }
 
     ////////////////////////////////////////////////////////
     // history
@@ -2288,7 +2322,9 @@ function Invoker() {
 
 function KeyComboHandler() {
     var combos = {};
-
+    var nameMap = {};
+    var combo2name = {};
+    
     function keysFromEvent(event) {
         var keys = [];
         for (var mod in event.modifiers) {
@@ -2305,7 +2341,7 @@ function KeyComboHandler() {
         return sorted(keys).join("+");
     }
 
-    this.add = function(keys, objOrFunc, funcname) {
+    this.add = function(name, keys, objOrFunc, funcname) {
         var func = undefined;
         if (typeof(objOrFunc) === 'function') {
             func = objOrFunc;
@@ -2313,8 +2349,11 @@ function KeyComboHandler() {
         else {
             func = function() { objOrFunc[funcname].apply(objOrFunc); };
         }
-        
-        combos[makeKeyComboId(keys)] = func;
+
+        var cid = makeKeyComboId(keys);
+        combos[cid] = func;
+        nameMap[name] = func;
+        combo2name[cid] = name;
     };
 
     this.call = function(event) {
@@ -2322,14 +2361,19 @@ function KeyComboHandler() {
         var id = makeKeyComboId(keys);
         if (combos[id] !== undefined) {
             combos[id]();
+
+            ui.highlightAction(combo2name[id]);
+            
             event.preventDefault();
             return false;
         }
         return true;
     };
 
-    
-    return this;
+    this.callWithName = function(name) {
+        nameMap[name]();
+    }
+
 }
 
 
@@ -2797,34 +2841,17 @@ var plot = new Plot();
 
 var invoker = new Invoker();
 var keyHandler = new KeyComboHandler();
-keyHandler.add(["command", "shift", "z"], invoker, "redo"); //function() { invoker.redo(); });
-keyHandler.add(["command", "z"], invoker, "undo"); //function() { invoker.undo(); });
-keyHandler.add(["command", "p"], plot, "all")
-keyHandler.add(["command", "shift", "p"], plot, "selected");
+keyHandler.add("redo", ["command", "shift", "z"], invoker, "redo");
+keyHandler.add("undo", ["command", "z"], invoker, "undo");
+keyHandler.add("plot", ["command", "p"], plot, "all")
+keyHandler.add("plotSelected", ["command", "shift", "p"], plot, "selected");
+keyHandler.add("merge", ["command", "m"], mergeShapes);
+keyHandler.add("duplicate", ["command", "d"], duplicateSelected);
+keyHandler.add("download", ["command", "s"], ui, "download");
+keyHandler.add("upload", ["command", "o"], ui, "upload");
 
-keyHandler.add(["command", "m"], function() {
-    // console.log(shapes.shapeIds());
-    shapes.shapeIds().forEach(function(id) {
-        shapes.get(id).mergeLines();
-    });
-});
-
-keyHandler.add(["command", "a"], function() {
-    filterDuplicateLines(shapes.shapeIds());
-});
-
-keyHandler.add(["command", "x"], function() {
+keyHandler.add("plotoffsets", ["command", "x"], function() {
     plotOuterOffsets();
-    console.log("requested");
-});
-
-keyHandler.add(["command", "m"], function() {
-    mergeShapes();
-});
-
-keyHandler.add(["command", "d"], function() {
-    duplicateSelected();
-
 });
 
 

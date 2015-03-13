@@ -68,26 +68,38 @@ $selected-colour: rgba(88,247,179, 0.8); //#7ea;
     background: $selected-colour !important;
 }
 
-#toolbar {
-    position: absolute;
-    top: $overlay-margin;
-    left: $overlay-margin;
-    /* width: 24px; */
-    /* height:; */
-    /* background: $overlay-background; */
-    .tool {
-        width: 24px;
-        height: 24px;
-        /* margin-bottom: 5px; */
-        padding: 5px;
-        display: block;
-        background: $overlay-background;
-    }
+.button {
+    width: 24px;
+    height: 24px;
+    margin: 0px;
+    padding: 5px;
+    background: $overlay-background;
 }
-
-.tool:hover {
+.button:hover {
     cursor: pointer;
 }
+
+
+.tool {
+    display: block;
+}
+
+#toolbar {
+    position: absolute;
+    top: $overlay-margin*4;
+    left: $overlay-margin;    
+}
+
+#actionbar {
+    position: absolute;
+    top: $overlay-margin;
+    left: $overlay-margin*10;
+}
+
+.action {
+    margin: -5px;
+}
+
 
 
 #messages {

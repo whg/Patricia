@@ -45,23 +45,31 @@ canvas {
 .selected {
   background: rgba(88, 247, 179, 0.8) !important; }
 
+.button {
+  width: 24px;
+  height: 24px;
+  margin: 0px;
+  padding: 5px;
+  background: rgba(200, 200, 200, 0.2); }
+
+.button:hover {
+  cursor: pointer; }
+
+.tool {
+  display: block; }
+
 #toolbar {
   position: absolute;
-  top: 15px;
-  left: 15px;
-  /* width: 24px; */
-  /* height:; */
-  /* background: $overlay-background; */ }
-  #toolbar .tool {
-    width: 24px;
-    height: 24px;
-    /* margin-bottom: 5px; */
-    padding: 5px;
-    display: block;
-    background: rgba(200, 200, 200, 0.2); }
+  top: 60px;
+  left: 15px; }
 
-.tool:hover {
-  cursor: pointer; }
+#actionbar {
+  position: absolute;
+  top: 15px;
+  left: 150px; }
+
+.action {
+  margin: -5px; }
 
 #messages {
   display: none;
