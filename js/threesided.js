@@ -1618,7 +1618,10 @@ function UI() {
     
     $("#download").click(function(e) {
 
-        var data = shapes.getState();
+        var data = {};
+        data["version"] = 0.01;
+        data["shapes"] = shapes.getState();
+        data["triangleSide"] = side;
         
         var anchor = $(this);
         var req = $.ajax({
@@ -1646,10 +1649,11 @@ function UI() {
     });
 
     function loadState(obj) {
-        console.log("loading");
-        console.log(obj);
 
-        shapes.loadState(JSON.parse(obj));
+        var data = JSON.parse(obj);
+        setTriangleSize(data["triangleSide"]);
+        
+        shapes.loadState(data["shapes"]);
         var shapeIds = shapes.shapeIds();
         shapeIds.forEach(function(shapeId) {
             var shape = shapes.get(shapeId);
@@ -2870,4 +2874,4 @@ var testPlotterConnection = null;
 //    console.log(message);
 // };
 
-// var testConnectionInterval = setInterval(testPlotterConnection, 5000);
+// var testConnectionInterval = setInterval(testPlotterConnection, 
