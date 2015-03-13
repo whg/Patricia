@@ -2342,23 +2342,28 @@ function Action(invoker, keyHandler) {
     function zoom(event) {
         project.activeLayer.scale(1 + (event.delta.y * 0.005), event.point);
     }
-
     
-    function addTriangle(event) {
+    
+    function addTriangle(event, follow) {
         var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
         if (!isValidTriple(triple)) {
             return;
         }
+
         
         if (!shapes.get(current.shape).has(triple)) {
             invoker.push(ExtendShapeAction, "forward", [triple, current.shape]);
         }
-        else {
+        else if (follow){
             if (invertedIndex.has(triple.id) && triple.id !== current.triple.id) {
                 invoker.push(ExtendShapeAction, "backward", [current.triple, current.shape]);
             }
         }
         current.triple = triple;
+    }
+
+    function addTriangleFollow(event) {
+        return addTriangle(event, true);
     }
 
     function findShape(event) {
@@ -2603,6 +2608,7 @@ function Action(invoker, keyHandler) {
     this.modes = {
         "view": createMouseMode("v", none, pan, zoom, none),
         "draw": createMouseMode("a", findShape, addTriangle, pan, none),
+        "drawfollow": createMouseMode("f", findShape, addTriangleFollow, pan, none),
         "select": createMouseMode("s", selectShapes, marqueShapes, pan, marqueShapesUp),
         "shink": createMouseMode("d", findShape, removeTriangle, pan, none),
         "move": createMouseMode("m", selectShapes, moveShapes, pan, none),
