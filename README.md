@@ -10,7 +10,8 @@ Patricia tries to be a bit like Adobe's Illustrator; Pressing keys enables diffe
 
 ### Modes/Tools
 
-- Draw (**a**): Drag the mouse to create a shape. This is both constructive and desctrucive, if you move to an empty triangle it will fill it, but if you move to a filled one it will remove it.
+- Draw (**a**): Drag the mouse to create a shape.
+- DrawFollow (**f**): Like above, but this is both constructive and desctrucive, if you move to an empty triangle it will fill it, but if you move to a filled one it will remove it.
 - Erase (**e**): Erase the contents of a triangle, by clicking or dragging.
 - Select (**s**): Select shapes by clicking or dragging a marquee.
 - Move (**m**): Move the selected shapes or the shape that you initally click on.
@@ -19,7 +20,7 @@ Patricia tries to be a bit like Adobe's Illustrator; Pressing keys enables diffe
 
 ### Actions
 
-Actions are invoked by combining keys with one or more modifier key. The Control key is mirrored with Command.
+Actions are shown on the top tool bar, they can also be invoked by combining keys with one or more modifier. The Control key is mirrored with Command.
 
 - Merge (**Command-m**): Merge selected shapes.
 - Duplicate (**Command-d**): Duplicate the selected shapes at location. (The new shapes are selected after this action.)
@@ -27,6 +28,8 @@ Actions are invoked by combining keys with one or more modifier key. The Control
 - Redo (**Command-Shift-z**)
 - Plot (**Command-p**): Plot all the shapes.
 - Plot selected (**Command-Shift-p**): Plot the selected shapes.
+- Download (**Command-s**)
+- Upload (**Command-o**)
 
 You can delete the selected shapes by hitting the backspace key.
 
@@ -38,9 +41,9 @@ By clicking on the the arrow next to the name you can edit their properties. Not
 
 The current shape has a green stripe/border on the left.
 
-### Saving and Loading
+### Saving, Loading & Offsets
 
-You can download and upload your project, but the server needs to be running to do this.
+For these to work, you need to make sure the server is running!
 
 ## Dependencies
 
