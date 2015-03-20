@@ -1448,7 +1448,14 @@ function Shapes() {
 
         var highestId = 0;
         for (var shapeId in dataObj) {
-            shapes[shapeId] = new TShape(dataObj[shapeId]);
+
+            var data = dataObj[shapeId];
+
+            if (data.triples == false) { // empty object
+                continue;
+            }
+
+            shapes[shapeId] = new TShape(data);
             shapes[shapeId].draw();
             highestId = Math.max(highestId, shapeId);
         }
@@ -1545,15 +1552,17 @@ function UI() {
 
         shapes.get(shapeId).name = input;
         $(this).parents("li").find("span").text(input);
-        // console.log(e);
     });
-
 
     
     function toggleDetails(arrow) {
         arrow.toggleClass("arrow-down");
         arrow.siblings("span").toggle();
-        arrow.siblings("form").find("input").toggle();
+        var input = arrow.siblings("form").find("input");
+        input.toggle();
+        input.focus(function(e) {
+            console.log("sell");
+        });
 
         var details = arrow.parent().next();
         
@@ -1595,6 +1604,7 @@ function UI() {
     
     $("#shapes").on("click", ".arrow", function() {
         toggleDetails($(this));
+        
     });
 
     $("#shapes").on("change", "select", function() {
