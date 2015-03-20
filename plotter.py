@@ -55,14 +55,20 @@ def orderpaths(paths):
     wasstart = True
     for i in range(len(paths)-1):
         v = tree.search_nn(ends[lpi] if wasstart else starts[lpi])
-
+        if not v:
+            continue
         try:
             lpi = starts.index(v.data)
+            wasstart = True
         except ValueError:
             lpi = ends.index(v.data)
+            wasstart = False
 
         tree = tree.remove(starts[lpi])
         tree = tree.remove(ends[lpi])
+
+        # i have a feeling that the order of the path should be reversed
+        # if wasstart is False...
         ret.append(paths[lpi])
 
     return ret
