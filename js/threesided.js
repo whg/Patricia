@@ -1694,7 +1694,9 @@ function UI() {
             view.draw();
         };
 
-        fileReader.readAsText(file);
+        if (file) {
+            fileReader.readAsText(file);
+        }
     });
 
 
