@@ -1626,11 +1626,7 @@ function UI() {
     ////////////////////////////////////////
     // download & upload
 
-    function download() {
-        var data = {};
-        data["version"] = 0.01;
-        data["shapes"] = shapes.getState();
-        data["triangleSide"] = side;
+    function requestDownload(data) {
         
         var anchor = $(this);
         var req = $.ajax({
@@ -1648,7 +1644,24 @@ function UI() {
         });
         
     }
+
+    function download() {
+        var data = {};
+        data["version"] = 0.01;
+        data["shapes"] = shapes.getState();
+        data["triangleSide"] = side;
+        requestDownload(data);
+    }    
     this.download = download;
+
+    function exportCanvas() {
+
+        var shapeIds = shapes.shapeIds();
+        filterDuplicateLines(shapeIds);
+        var data = sortIntoPens(shapeIds);
+        requestDownload(data);
+    }
+    this.exportCanvas = exportCanvas;
     
     $("#download").click(function(e) {
 
@@ -1808,7 +1821,7 @@ function Plot() {
         filterDuplicateLines(shapeIds);
         
         var data = sortIntoPens(shapeIds);
-        console.log("data = " + data);
+
 
         var req = $.ajax({
             url: HOST + "/plot/",
@@ -1830,6 +1843,7 @@ function Plot() {
     };
     
 }
+
 
 function requestOffsets(shapeId, data, cb) {
     console.log(data);
@@ -2861,6 +2875,7 @@ keyHandler.add("merge", ["command", "m"], mergeShapes);
 keyHandler.add("duplicate", ["command", "d"], duplicateSelected);
 keyHandler.add("download", ["command", "s"], ui, "download");
 keyHandler.add("upload", ["command", "o"], ui, "upload");
+keyHandler.add("export", ["command", "e"], ui, "exportCanvas");
 
 keyHandler.add("plotoffsets", ["command", "x"], function() {
     plotOuterOffsets();
