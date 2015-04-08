@@ -17,38 +17,21 @@ function Action(invoker, keyHandler) {
         }
     }
 
-    function createMouseMode(key, mouseDown, mouseDrag, mouseScroll, mouseUp, option) {
-        return {
-            key: key,
-            onMouseDown: mouseDown,
-            onMouseDrag: mouseDrag,
-            onMouseScroll: mouseScroll,
-            onMouseUp: mouseUp,
-        };
-    }
-    var none = function() {};
     
-    this.modes = {
-        "view": createMouseMode("v", none, pan, zoom, none),
-        "draw": createMouseMode("a", findShape, addTriangle, pan, none),
-        "drawfollow": createMouseMode("f", findShape, addTriangleFollow, pan, none),
-        "select": createMouseMode("s", selectShapes, marqueShapes, pan, marqueShapesUp),
-        "shink": createMouseMode("d", findShape, removeTriangle, pan, none),
-        "move": createMouseMode("m", selectShapes, moveShapes, pan, none),
-        "erase": createMouseMode("e", eraseTriangle, eraseTriangle, pan, none),
-        "offsetRect": createMouseMode("b", none, offsetRectDrag, none, offsetRectUp),
-        "clone": createMouseMode("c", cloneCurrentAppearence, cloneCurrentAppearence, pan, none),
-    };
-
-    for (var modeKey in this.modes) {
-        this.modes[modeKey].option = this.modes["view"];
-    }
-
+    this.modes = {};
     var modeKeys = {};
-    for (var name in this.modes) {
-        modeKeys[this.modes[name].key] = name;
-        this.modes[name].name = name;
-    }
+    
+    this.initModes = function() {
+        for (var modeKey in this.modes) {
+            this.modes[modeKey].option = this.modes["view"];
+        }
+
+        for (var name in this.modes) {
+            modeKeys[this.modes[name].key] = name;
+            this.modes[name].name = name;
+        }
+    };
+    
 
     this.selectMode = function(nameOrKey) {
         var mode = this.modes[modeKeys[nameOrKey]];
@@ -150,3 +133,14 @@ function Action(invoker, keyHandler) {
     });
 
 }
+
+function createMouseMode(key, mouseDown, mouseDrag, mouseScroll, mouseUp, option) {
+    return {
+        key: key,
+        onMouseDown: mouseDown,
+        onMouseDrag: mouseDrag,
+        onMouseScroll: mouseScroll,
+        onMouseUp: mouseUp,
+    };
+}
+var none = function() {};

@@ -37,6 +37,18 @@ keyHandler.add("plotoffsets", ["command", "x"], function() {
 });
 
 var action = new Action(invoker, keyHandler);
+action.modes = {
+    "view": createMouseMode("v", none, pan, zoom, none),
+    "draw": createMouseMode("a", findShape, addTriangle, pan, none),
+    "drawfollow": createMouseMode("f", findShape, addTriangleFollow, pan, none),
+    "select": createMouseMode("s", selectShapes, marqueShapes, pan, marqueShapesUp),
+    "shink": createMouseMode("d", findShape, removeTriangle, pan, none),
+    "move": createMouseMode("m", selectShapes, moveShapes, pan, none),
+    "erase": createMouseMode("e", eraseTriangle, eraseTriangle, pan, none),
+    "offsetRect": createMouseMode("b", none, offsetRectDrag, none, offsetRectUp),
+    "clone": createMouseMode("c", cloneCurrentAppearence, cloneCurrentAppearence, pan, none),
+};
+action.initModes();
 
 var current = new Current();
 action.selectMode("draw")
