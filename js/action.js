@@ -18,7 +18,9 @@ function Action(invoker, keyHandler) {
     }
 
     
-    this.modes = {};
+    this.modes = {
+        "view": createMouseMode("v", none, pan, zoom, none),
+    };
     var modeKeys = {};
     
     this.initModes = function() {
@@ -30,6 +32,17 @@ function Action(invoker, keyHandler) {
             modeKeys[this.modes[name].key] = name;
             this.modes[name].name = name;
         }
+    };
+    this.initModes();
+
+    this.addMode = function(name, mouseMode) {
+        this.modes[name] = mouseMode;
+
+        // not good... 
+        this.modes[name].option = this.modes["view"];
+        modeKeys[mouseMode.key] = name;
+        this.modes[name].name = name; // now that's stupid
+        
     };
     
 
