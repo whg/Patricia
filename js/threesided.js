@@ -1160,6 +1160,8 @@ function TShape(idOrData, order) {
 
     extend(this, new SetWithUniverse());
 
+    var that = this;
+
     if (idOrData.triples === undefined) {
         this.id = idOrData;
         this.order = order;
@@ -1174,8 +1176,12 @@ function TShape(idOrData, order) {
             this.add(new Triple(triples[i]));
         }
         if (idOrData.appearence) {
-            this.appearence = idOrData.appearence;
+            this.appearence = clone(idOrData.appearence);
+            // this.appearence.outline = idOrData.appearence.outline || 1;
+            // this.appearence.fill = idOrData.appearence.fill || 1;
+            // debugger;
         }
+        console.log(this.id + ": " + this.appearence.outline);
     }
 
     
@@ -1208,7 +1214,6 @@ function TShape(idOrData, order) {
     // we want to know when fill and outline in appearence
     // are set, so define getters and setters
     
-    var that = this;
     Object.defineProperty(this.appearence, "fill", {
         set: function(v) {
             that.fill.visible = v !== "none";
@@ -1223,8 +1228,10 @@ function TShape(idOrData, order) {
         set: function(v) {
             that.outline.visible = v !== "none";
             this._outline = v;
+            console.log("setting outline");
         },
         get: function() {
+            console.log("getting outline...");
             return this._outline;
         }
     });
