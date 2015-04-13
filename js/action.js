@@ -119,7 +119,10 @@ function Action(invoker, keyHandler) {
             deleteSelected();
             ret = false;
         }
-        
+
+        if (that.keyDownCallback) {
+            that.keyDownCallback.apply(null, arguments);
+        }
 
         return ret; // might be false in which case don't do what you normally do
     }
