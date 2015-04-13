@@ -1,4 +1,11 @@
+function BaseUI() {
+    this.updateTool = function() {};
+    this.highlightAction = function() {};
+}
+
 function UI() {
+
+    extend(this, new BaseUI);
     
     $("#shapes").sortable({
         update: function(event, ui) {
