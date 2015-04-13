@@ -81,6 +81,10 @@ function cartesianProduct() {
 }
 
 function range(from, to) {
+    if (to === undefined) {
+        to = from;
+        from = 0;        
+    }
     var ret = [];
     for (var i = from; i < to; i++) {
         ret.push(i);
