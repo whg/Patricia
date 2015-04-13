@@ -1,0 +1,8 @@
+.#*
+#*
+saves/
+plots/
+*.pyc
+.sass-cache/
+/css/style.css.map
+imgs/*

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="../css/style.css" type="text/css" media="screen" />
+
+
+  <script type="text/javascript" src="../js/lib/jquery.min.js"></script>
+  <script type="text/javascript" src="../js/lib/paper.js"></script>
+
+</head>
+<body>
+
+
+	<canvas id="canvas" resize></canvas>
+
+  
+  <div id="sidebar">
+    <div id="connection-status" class="sidebar-container">
+      <h4>Connections</h4>
+      <table>
+        <tr>
+          <td>Server:</td>
+          <td id="server-status"></td>
+        </tr>
+        <tr>
+          <td>Plotter:</td>
+          <td id="plotter-status"></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="sidebar-container" id="controls">
+        <table>
+        <tr>
+          <td>Multiplier:</td>
+          <td><input type="range" name="multiplier"id="multiplier" min="2" max="30" value="20"></td>
+        </tr>
+        <tr>
+          <td>Gap:</td>
+          <td><input type="range" name="gap" min="50" max="1000" value="400"></td>
+        </tr>
+        <tr>
+          <td>Amplitude:</td>
+          <td><input type="range" name="amp" min="0" max="20" value="10"></td>
+        </tr>
+        <tr>
+          <td>XStep:</td>
+          <td><input type="range" name="xstep" min="1" max="50" value="10"></td>
+        </tr>
+        <!-- <tr> -->
+        <!--   <td>Rows:</td> -->
+        <!--   <td><input type="range" name="nrows" min="5" max="100" value="30"></td> -->
+        <!-- </tr> -->
+        <tr>          
+          <td>-</td>
+        </tr>
+        <tr>
+          <td>Dir:</td>
+          <td><input type="range" name="dir" min="1" max="100" value="30"></td>
+        </tr>
+        <tr>
+          <td>Random:</td>
+          <td><input type="range" name="random" min="1" max="100" value="30"></td>
+        </tr>
+      </table>
+    </div>
+    
+  </div>
+<div id="thanks">Thank you to the creators of <a href="paperjs.org">paper.js</a> for a beautiful tool.</div>
+
+<script type="text/javascript" src="../init.js"></script>
+<script type="text/javascript" src="../dest/main.js"></script>
+<script type="text/javascript" src="waves.js"></script>
+
+</body>
+</html>
+

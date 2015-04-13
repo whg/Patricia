@@ -17,38 +17,34 @@ function Action(invoker, keyHandler) {
         }
     }
 
-    function createMouseMode(key, mouseDown, mouseDrag, mouseScroll, mouseUp, option) {
-        return {
-            key: key,
-            onMouseDown: mouseDown,
-            onMouseDrag: mouseDrag,
-            onMouseScroll: mouseScroll,
-            onMouseUp: mouseUp,
-        };
-    }
-    var none = function() {};
     
     this.modes = {
         "view": createMouseMode("v", none, pan, zoom, none),
-        "draw": createMouseMode("a", findShape, addTriangle, pan, none),
-        "drawfollow": createMouseMode("f", findShape, addTriangleFollow, pan, none),
-        "select": createMouseMode("s", selectShapes, marqueShapes, pan, marqueShapesUp),
-        "shink": createMouseMode("d", findShape, removeTriangle, pan, none),
-        "move": createMouseMode("m", selectShapes, moveShapes, pan, none),
-        "erase": createMouseMode("e", eraseTriangle, eraseTriangle, pan, none),
-        "offsetRect": createMouseMode("b", none, offsetRectDrag, none, offsetRectUp),
-        "clone": createMouseMode("c", cloneCurrentAppearence, cloneCurrentAppearence, pan, none),
     };
-
-    for (var modeKey in this.modes) {
-        this.modes[modeKey].option = this.modes["view"];
-    }
-
     var modeKeys = {};
-    for (var name in this.modes) {
-        modeKeys[this.modes[name].key] = name;
-        this.modes[name].name = name;
-    }
+    
+    this.initModes = function() {
+        for (var modeKey in this.modes) {
+            this.modes[modeKey].option = this.modes["view"];
+        }
+
+        for (var name in this.modes) {
+            modeKeys[this.modes[name].key] = name;
+            this.modes[name].name = name;
+        }
+    };
+    this.initModes();
+
+    this.addMode = function(name, mouseMode) {
+        this.modes[name] = mouseMode;
+
+        // not good... 
+        this.modes[name].option = this.modes["view"];
+        modeKeys[mouseMode.key] = name;
+        this.modes[name].name = name; // now that's stupid
+        
+    };
+    
 
     this.selectMode = function(nameOrKey) {
         var mode = this.modes[modeKeys[nameOrKey]];
@@ -123,7 +119,10 @@ function Action(invoker, keyHandler) {
             deleteSelected();
             ret = false;
         }
-        
+
+        if (that.keyDownCallback) {
+            that.keyDownCallback.apply(null, arguments);
+        }
 
         return ret; // might be false in which case don't do what you normally do
     }
@@ -150,6 +149,17 @@ function Action(invoker, keyHandler) {
     });
 
 }
+
+function createMouseMode(key, mouseDown, mouseDrag, mouseScroll, mouseUp, option) {
+    return {
+        key: key,
+        onMouseDown: mouseDown,
+        onMouseDrag: mouseDrag,
+        onMouseScroll: mouseScroll,
+        onMouseUp: mouseUp,
+    };
+}
+var none = function() {};
 
 var MergeShapeAction = {
   "forward": function(mergeIntoId, shapeIdsAndTriples) {
@@ -2202,7 +2212,14 @@ function RingBuffer(size, banConsecutive) {
     };
 }
 
+function BaseUI() {
+    this.updateTool = function() {};
+    this.highlightAction = function() {};
+}
+
 function UI() {
+
+    extend(this, new BaseUI);
     
     $("#shapes").sortable({
         update: function(event, ui) {
@@ -2875,6 +2892,10 @@ function cartesianProduct() {
 }
 
 function range(from, to) {
+    if (to === undefined) {
+        to = from;
+        from = 0;        
+    }
     var ret = [];
     for (var i = from; i < to; i++) {
         ret.push(i);
