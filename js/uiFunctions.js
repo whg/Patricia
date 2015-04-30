@@ -32,7 +32,7 @@ function addTriangleFollow(event) {
 function findShape(event) {
     var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
     if (!isValidTriple(triple)) {
-        return;
+        return;x
     }
 
     current.triple = triple;
@@ -74,7 +74,7 @@ function selectShapes(event) {
         current.selected.clear();
     }
     else {
-        if (!modifierStates["shift"]) {
+        if (!action.modifierStates["shift"]) {
             
             if (!current.selected.has(sid)){
                 current.selected.clear();
