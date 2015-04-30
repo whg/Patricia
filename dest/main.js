@@ -4,6 +4,7 @@ function Action(invoker, keyHandler) {
     function callEventFactory(eventType) {
         
         return function(event) {
+            console.log(current.mode.option);
             if (modifierStates["option"] && current.mode.option) {
                 console.log(modifierStates["option"]);
                 current.mode.option[eventType].apply(null, [event]);
@@ -18,31 +19,16 @@ function Action(invoker, keyHandler) {
     }
 
     
-    this.modes = {
-        "view": createMouseMode("v", none, pan, zoom, none),
-    };
-    var modeKeys = {};
+    this.modes = {};
     
-    this.initModes = function() {
-        for (var modeKey in this.modes) {
-            this.modes[modeKey].option = this.modes["view"];
-        }
-
-        for (var name in this.modes) {
-            modeKeys[this.modes[name].key] = name;
-            this.modes[name].name = name;
-        }
-    };
-    this.initModes();
+    var modeKeys = {};
 
     this.addMode = function(name, mouseMode) {
         this.modes[name] = mouseMode;
 
-        // not good... 
-        this.modes[name].option = this.modes["view"];
         modeKeys[mouseMode.key] = name;
         this.modes[name].name = name; // now that's stupid
-        
+
     };
     
 
@@ -60,6 +46,7 @@ function Action(invoker, keyHandler) {
     };
 
     var modifierStates = { "command": false, "control": false, "option": false, "shift": false };
+    this.modifierStates = modifierStates;
     var modifiers = Object.keys(modifierStates);
     
 
@@ -94,10 +81,11 @@ function Action(invoker, keyHandler) {
             event.key = "command";
         }
         
-        // console.log(event);
+        // console.log(event.key);
 
         if (event.key in modifierStates) {
             modifierStates[event.key] = true;
+            console.log("modifier state on " + event.key);
         }
         else if (atLeastOneModifier()) {
             for (var key in modifierStates) {
@@ -2601,7 +2589,7 @@ function addTriangleFollow(event) {
 function findShape(event) {
     var triple = worldToTriple(project.activeLayer.globalToLocal(event.point), alt);
     if (!isValidTriple(triple)) {
-        return;
+        return;x
     }
 
     current.triple = triple;
@@ -2643,7 +2631,7 @@ function selectShapes(event) {
         current.selected.clear();
     }
     else {
-        if (!modifierStates["shift"]) {
+        if (!action.modifierStates["shift"]) {
             
             if (!current.selected.has(sid)){
                 current.selected.clear();
